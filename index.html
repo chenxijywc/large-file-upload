@@ -21,27 +21,28 @@
         initAxios()
         let isInput = document.querySelector('.isInput')
         let unit = 1024*1024*5  //每个切片的大小定位5m
+        // 输入框change事件
         isInput.onchange = function(e) {
             let userId = `5421-${new Date().getTime()}` // 用户id,标记数据的唯一性
             let file = e.target.files[0]
             console.log(file,'file')
             let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-            let allFormData = []
+            let allDatas = []
             for (let i = 0; i < sliceNumber; i++) {
                 let sliceFile = file.slice(i*unit,i*unit+unit)
                 setMd5(sliceFile).then((res)=>{
-                    let fd = new FormData()
-                    fd.append('file',res)
-                    fd.append('sliceFileSize',sliceFile.size)
-                    fd.append('index',i)
-                    fd.append('fileSize',file.size)
-                    fd.append('fileName',file.name)
-                    fd.append('sliceNumber',sliceNumber)
-                    fd.append('userId',userId)
-                    allFormData.push(fd)  // 放到一个数组里,预防其中一个请求断了
-                    // for (let [a, b] of fd.entries()) { console.log(`${a}: ${b}`) }
-                    console.log(allFormData,'里边')
-                    // upload(fd,(progress)=>{
+                    let needObj = {
+                        file:res,
+                        sliceFileSize:sliceFile.size,
+                        index:i,
+                        fileSize:file.size,
+                        fileName:file.name,
+                        sliceNumber,
+                        userId,
+                    }
+                    allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
+                    console.log(allDatas,'里边')
+                    // upload(needObj,(progress)=>{
                     //     console.log(Math.round(progress.loaded / progress.total * 100) + '%')
                     // }).then((res)=>{
                          
