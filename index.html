@@ -8,7 +8,7 @@
     <script src="./js/spark-md5.min.js"></script>
     <script src="./js/axios.js"></script>
     <style>
-        .topBox{text-align: center;padding: 40px;}
+        .topBox{text-align: center;padding: 80px;}
     </style>
 </head>
 <body>
@@ -41,15 +41,19 @@
                     allFormData.push(fd)  // 放到一个数组里,预防其中一个请求断了
                     // for (let [a, b] of fd.entries()) { console.log(`${a}: ${b}`) }
                     console.log(allFormData,'里边')
-                    // service({url:'./123',method:'post',data:{},onUploadProgress:(progress)=>{
-                    //     console.log(Math.round(progress.loaded / progress.total * 100) + '%');
-                    // }}).then((res)=>{
-        
+                    // upload(fd,(progress)=>{
+                    //     console.log(Math.round(progress.loaded / progress.total * 100) + '%')
+                    // }).then((res)=>{
+                         
                     // }).catch((err)=>{
                     //     console.log(err)
                     // })
                 })
             }
+        }
+        // 上传接口
+        function upload(data,onUploadProgress){
+            service({url:'./123',method:'post',data,onUploadProgress})
         }
         // md5加密
         function setMd5(file){
