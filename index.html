@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./js/spark-md5.min.js"></script>
+</head>
+<body>
+    <input type="file" class="isInput">
+
+    <script>
+        let isInput = document.querySelector('.isInput')
+        let unit = 1024*1024*5  //每个切片的大小定位5m
+        isInput.onchange = function(e) {
+            let file = e.target.files[0]
+            let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+            let blobs = []
+            for (let i = 0; i < sliceNumber; i++) {
+                blobs.push(file.slice(i*unit,i*unit+unit))
+            }
+            const spark = new SparkMD5.ArrayBuffer();
+            console.log(spark)
+            console.log(file)
+            console.log(blobs)
+        }
+    </script>
+</body>
+</html>
