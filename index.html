@@ -76,7 +76,8 @@
         // 初始化axios
         function initAxios(){
             const { protocol, hostname, port } = window.location // location对象里的协议地址端口
-            let baseUrl = protocol + '//' + hostname + (port ? ':' + port : '')
+            // let baseUrl = protocol + '//' + hostname + (port ? ':' + port : '')
+            let baseUrl = '192.168.0.102:3000'
             service = axios.create({
               baseURL: baseUrl, // 请求头
               timeout: 15000 // 请求超时时间
