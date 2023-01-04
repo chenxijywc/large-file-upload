@@ -1,6 +1,7 @@
 const express = require('express')
 var bodyParser = require('body-parser');
 const os = require('os')
+const cors = require('cors');  
 
 const port = 3000
 
@@ -12,16 +13,19 @@ app.use(bodyParser.json());
 // 解析 application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded());
 
+app.use(cors())
+
 //监听post请求
-app.post('./updata', (req,res)=>{
-    //通过post的方式传递过来的参数,通过req.query是无法获取的,因为post的请求参数在请求体里
-    //要拿到通过post方式传递过来的参数,就要使用第三方包:body-parser:json对象,multer:formData
-    //body-parser:req.body multer:req.file,req.body
-    console.log(req,'req')
-    res.send({
-        result:1,
-        msg:'请求成功'
-    })
+app.post('/updata', cors(), (req,res)=>{
+    console.log(req.body,'req')
+    // file: 'd1886197f363c537534a9046d5f7f54c',
+    // sliceFileSize: 5242880,
+    // index: 1,
+    // fileSize: 15729073,
+    // fileName: '爱剪辑-我的视频44.mp4',
+    // sliceNumber: 4,
+    // userId: '5421-1672847548219'
+    res.send({result:1,msg:'接收成功'})
 })
 
 // 获取ip地址

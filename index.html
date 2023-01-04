@@ -42,19 +42,19 @@
                     }
                     allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
                     console.log(allDatas,'里边')
-                    // upload(needObj,(progress)=>{
-                    //     console.log(Math.round(progress.loaded / progress.total * 100) + '%')
-                    // }).then((res)=>{
-                         
-                    // }).catch((err)=>{
-                    //     console.log(err)
-                    // })
+                    upload(needObj,(progress)=>{
+                        console.log(Math.round(progress.loaded / progress.total * 100) + '%')
+                    }).then((res)=>{
+                        console.log(res.data,'返回响应数据')  
+                    }).catch((err)=>{
+                        console.log(err)
+                    })
                 })
             }
         }
         // 上传接口
         function upload(data,onUploadProgress){
-            service({url:'./123',method:'post',data,onUploadProgress})
+            return service({url:'/updata',method:'post',data,onUploadProgress})
         }
         // md5加密
         function setMd5(file){
@@ -75,9 +75,9 @@
         }
         // 初始化axios
         function initAxios(){
-            const { protocol, hostname, port } = window.location // location对象里的协议地址端口
+            // const { protocol, hostname, port } = window.location // location对象里的协议地址端口
             // let baseUrl = protocol + '//' + hostname + (port ? ':' + port : '')
-            let baseUrl = '192.168.0.102:3000'
+            let baseUrl = 'http://192.168.56.1:3000'
             service = axios.create({
               baseURL: baseUrl, // 请求头
               timeout: 15000 // 请求超时时间
