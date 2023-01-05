@@ -25,7 +25,16 @@ app.post('/updata', cors(), (req,res)=>{
     // fileName: '爱剪辑-我的视频44.mp4',
     // sliceNumber: 4,
     // userId: '5421-1672847548219'
-    res.send({result:1,msg:'接收成功'})
+    if(req.body.index === 0){
+        setTimeout(() => {
+            res.send({result:1,msg:'接收成功'})
+        }, 5000)
+    }else{
+        res.send({result:1,msg:'接收成功'})
+    }
+})
+app.get('/isTest', cors(), (req,res)=>{
+    res.send('hellowWorld')
 })
 
 // 获取ip地址
