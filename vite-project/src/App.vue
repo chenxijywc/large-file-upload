@@ -10,6 +10,9 @@
   import { onMounted, ref } from 'vue'
   import {updata} from './api/home.ts'
   import SparkMD5 from "spark-md5";
+  let number = 2
+number = '2'
+
   const percentage = ref(0)
   // let unit = 1024*1024*5  //每个切片的大小定位5m
   let unit = 1024*1024*100
