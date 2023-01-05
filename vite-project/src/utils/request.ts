@@ -5,6 +5,9 @@ interface HttpResponse<T=void> {
   result:number
   msg:string
 }
+let name 
+name = 12
+name = '123123'
 
 // 设置请求头
 let myBaseURL = 'http://192.168.8.72:3000'
