@@ -8,7 +8,7 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
-  import {updata} from './api/home.ts'
+  import {updata} from '@/api/home.ts'
   import SparkMD5 from "spark-md5";
   let number = 2
 number = '2'
