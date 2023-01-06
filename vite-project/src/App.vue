@@ -22,7 +22,7 @@
   //注册事件:
   // 输入框change事件
   const inputChange = (e:Event) =>{
-    let userId = `5421-${new Date().getTime()}` // 用户id,标记数据的唯一性
+    let userId = `5421-${new Date().getTime()}` // 带时间搓的用户id,标记数据的唯一性
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     console.log(file,'file')
