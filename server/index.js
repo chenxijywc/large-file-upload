@@ -24,6 +24,7 @@ app.post('/updata', cors(), (req,res)=>{
     // sliceNumber: 4,
     // userId: '5421-1672847548219'
     if(req.body.index === 0){
+        // 下标为0的5秒后再返回回去,测试返回时间
         setTimeout(() => {
             res.send({result:1,msg:'接收成功'})
         }, 5000)
