@@ -1,13 +1,13 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import getIPAdress from '@/utils/getIPAdress';
 
 interface HttpResponse<T=void> {
   data: T
-  result:number
-  msg:string
 }
 
 // 设置请求头
 let myBaseURL = 'http://192.168.8.72:3000'
+// let myBaseURL = `${getIPAdress()}:3000`
 // let { protocol,hostname,port } = window.location  //location对象里的协议地址端口
 // protocol !== "http:" ? myBaseURL =  protocol + '//' + hostname + (port ? ':'+port : '') : ''  //协议地址端口动态拼接
 axios.defaults.baseURL = myBaseURL   

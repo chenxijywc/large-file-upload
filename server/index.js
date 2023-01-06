@@ -3,8 +3,6 @@ var bodyParser = require('body-parser');
 const os = require('os')
 const cors = require('cors');  
 
-const port = 3000
-
 //创建wab 服务器
 const app = express()
 
@@ -51,6 +49,6 @@ function getIPAdress() {
     }
   }
 
-  app.listen(port, () => {
-    console.log(`${getIPAdress()}:${port}`,'启动成功')
+  app.listen(3000, () => {
+    console.log(`${getIPAdress()}:3000`,'启动成功')
   })

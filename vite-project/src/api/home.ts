@@ -1,7 +1,7 @@
 import request from '../utils/request'
 
-interface UpDataReq{
-    file:string
+export interface UpDataReq{
+    file:string | unknown
     sliceFileSize:number
     index:number
     fileSize:number
@@ -10,9 +10,9 @@ interface UpDataReq{
     userId:string
 }
 interface UpDataRes{
-    
+  myNameYYYYY:string
 }
 
-export function updata(data:UpDataReq,onUploadProgress:()=>void) {
+export function updata(data:UpDataReq,onUploadProgress:(progress:ProgressEvent)=>void) {
     return request.post<UpDataRes>('/updata',data,{onUploadProgress})
 }
