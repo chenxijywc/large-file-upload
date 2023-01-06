@@ -7,7 +7,8 @@ interface HttpResponse<T=void> {
 
 const source = axios.CancelToken.source(); // 这里初始化source对象
 // 设置请求头
-let myBaseURL = 'http://192.168.8.72:3000'
+// let myBaseURL = 'http://192.168.8.72:3000'
+let myBaseURL = 'http://192.168.56.1:3000'
 // let myBaseURL = `${getIPAdress()}:3000`
 // let { protocol,hostname,port } = window.location  //location对象里的协议地址端口
 // protocol !== "http:" ? myBaseURL =  protocol + '//' + hostname + (port ? ':'+port : '') : ''  //协议地址端口动态拼接

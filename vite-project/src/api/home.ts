@@ -8,6 +8,7 @@ export interface UpDataReq{
     fileName:string
     sliceNumber:number
     userId:string
+    progressArr:Array<number>
 }
 interface UpDataRes{
   myNameYYYYY:string

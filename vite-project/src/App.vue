@@ -1,11 +1,12 @@
 <template>
   <div class="page">
-    <el-progress :text-inside="true" :stroke-width="20" :percentage="percentage" status="success"/>
+    <el-progress :text-inside="true" :stroke-width="20" :percentage="percentage" status="success" :color="customColors"/>
     <div class="topBox"> 
       <input type="file" class="isInput" @change="inputChange">
     </div>
     <div style="text-align:right;">
-      <el-button type="warning" round @click="stopUpdata">中止上传</el-button>
+      <el-button type="primary" round @click="reset">重置</el-button>
+      <el-button type="danger" round @click="stopUpdata">中止上传</el-button>
     </div>
   </div>
 </template>
@@ -19,20 +20,27 @@
   const percentage = ref(0)
   let unit = 1024*1024*5  //每个切片的大小定位5m
   // let unit = 1024*1024*100
+  const customColors = [
+    { color: '#f56c6c', percentage: 20 },
+    { color: '#e6a23c', percentage: 40 },
+    { color: '#5cb87a', percentage: 60 },
+    { color: '#1989fa', percentage: 80 },
+    { color: '#6f7ad3', percentage: 100 },
+  ]
   //页面一打开就调用:
   onMounted(()=>{
-    // console.log('1111111111')
-    // console.log('1111111111')
-    // setTimeout(() => {
-    //   console.clear()
-    // }, 5000)
     
   })
   // 注册事件:
-  // 中止上传
-  const stopUpdata = () =>{
+  // 重置
+  const reset = (needPercentage = true) =>{
     let isInput = document.querySelector('.isInput') as HTMLInputElement
     isInput.value = ''
+    needPercentage ? percentage.value = 0 : ''
+  }
+  // 中止上传
+  const stopUpdata = () =>{
+    reset()
     source.cancel('stopRequest')
   }
   // 输入框change事件
@@ -40,6 +48,7 @@
     let userId = `5421-${new Date().getTime()}` // 带时间搓的用户id,标记数据的唯一性
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
+    if(!file) return
     let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
     let allDatas:Array<UpDataReq> = []
     let allPromiseArr:Array<any> = []
@@ -61,7 +70,8 @@
             fileSize:file.size,
             fileName:file.name,
             sliceNumber,
-            userId
+            userId,
+            progressArr:[]
           }
           allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
           // console.log(allDatas,'里边')
@@ -69,7 +79,8 @@
           if(allPromiseArr.length === sliceNumber){
             // console.log(allPromiseArr,'allPromiseArr')
             Promise.all(allPromiseArr).then((res)=>{
-              // console.log(res,'所有都完成了---------------------------------')
+              percentage.value = 100
+              console.log(res,'所有都完成了---------------------------------')
             }).catch((err)=>{
               console.log(err,'失败或者被中止了---------------------------------')
               // 其中一个失败了都中止请求,可是请求过程中其中一个请求被强制中止了也会触发这里一次
@@ -84,9 +95,18 @@
   const updataRequest = (needObj:UpDataReq) => {
     return new Promise((resolve,reject)=>{
       updata(needObj,(progress)=>{
-        console.log(Math.round(progress.loaded / progress.total * 100) + '%')
-        let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
-        percentage.value = needProgress
+        let progressArr = needObj.progressArr
+        let finishSize = progress.loaded
+        if(progressArr.length > 0){
+          let endItem = progressArr.slice(-1)[0]
+          finishSize = finishSize - endItem
+        }
+        let placeholder = 100/needObj.sliceNumber  // 一片至少占100里的多少,例如只占15
+        let needProgress = placeholder*(Math.floor(finishSize / progress.total))  // 只占份数最新完成了多少
+        // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
+        progressArr.push(progress.loaded)
+        let endNeedProgress = Math.floor(percentage.value + needProgress)
+        percentage.value = endNeedProgress
       }).then((res)=>{
         // console.log(res,'返回响应数据')
         res.result === 1 ? resolve(needObj.userId) : reject({userId:needObj.userId,isStopRequest:false})

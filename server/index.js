@@ -27,7 +27,7 @@ app.post('/updata', cors(), (req,res)=>{
         // 下标为0的5秒后再返回回去,测试返回时间
         setTimeout(() => {
             res.send({result:1,msg:'接收成功'})
-        }, 5000)
+        }, 1000)
     }else{
         res.send({result:1,msg:'接收成功'})
     }
