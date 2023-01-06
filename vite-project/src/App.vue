@@ -13,31 +13,36 @@
   import { onMounted, ref } from 'vue'
   import {updata,UpDataReq} from '@/api/home'
   import SparkMD5 from "spark-md5";
-  //显示到视图层的初始数据:
+  import {source} from '@/utils/request'
+  console.clear()
+  // 显示到视图层的初始数据:
   const percentage = ref(0)
-  const controller = ref()
-  // let unit = 1024*1024*5  //每个切片的大小定位5m
-  let unit = 1024*1024*100
+  let unit = 1024*1024*5  //每个切片的大小定位5m
+  // let unit = 1024*1024*100
   //页面一打开就调用:
   onMounted(()=>{
+    // console.log('1111111111')
+    // console.log('1111111111')
+    // setTimeout(() => {
+    //   console.clear()
+    // }, 5000)
     
   })
-  //注册事件:
+  // 注册事件:
   // 中止上传
   const stopUpdata = () =>{
-    if(controller.value){
-      controller.value.abort()
-    }
+    let isInput = document.querySelector('.isInput') as HTMLInputElement
+    isInput.value = ''
+    source.cancel('stopRequest')
   }
   // 输入框change事件
   const inputChange = (e:Event) =>{
     let userId = `5421-${new Date().getTime()}` // 带时间搓的用户id,标记数据的唯一性
-    controller.value = new AbortController() 
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
     let allDatas:Array<UpDataReq> = []
-    let allPromiseArr:any[] = []
+    let allPromiseArr:Array<any> = []
     for (let i = 0; i < sliceNumber; i++) {
       let sliceFile = file.slice(i*unit,i*unit+unit)
       setMd5(sliceFile).then((res)=>{
@@ -62,11 +67,14 @@
           // console.log(allDatas,'里边')
           allPromiseArr.push(updataRequest(needObj))
           if(allPromiseArr.length === sliceNumber){
-            console.log(allPromiseArr,'allPromiseArr')
+            // console.log(allPromiseArr,'allPromiseArr')
             Promise.all(allPromiseArr).then((res)=>{
-              console.log(res,'所有都完成了---------------------------------')
-            }).catch(()=>{
-              controller.value.abort()  // 其中一个失败了都中止请求
+              // console.log(res,'所有都完成了---------------------------------')
+            }).catch((err)=>{
+              console.log(err,'失败或者被中止了---------------------------------')
+              // 其中一个失败了都中止请求,可是请求过程中其中一个请求被强制中止了也会触发这里一次
+              let {isStopRequest} = err
+              !isStopRequest ? source.cancel() : ''
             })
           }
       })
@@ -80,11 +88,16 @@
         let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         percentage.value = needProgress
       }).then((res)=>{
-        console.log(res,'返回响应数据')
-        res.result === 1 ? resolve(needObj.userId) : reject(needObj.userId)
+        // console.log(res,'返回响应数据')
+        res.result === 1 ? resolve(needObj.userId) : reject({userId:needObj.userId,isStopRequest:false})
         resolve(needObj.userId)
-      }).catch(()=>{
-        reject(needObj.userId)
+      }).catch((err)=>{
+        console.log(err,'err')
+        if(err && err.message === 'stopRequest'){
+          reject({userId:needObj.userId,isStopRequest:true})
+        }else{
+          reject({userId:needObj.userId,isStopRequest:false})
+        }
       })
     } )
   }

@@ -5,6 +5,7 @@ interface HttpResponse<T=void> {
   data: T
 }
 
+const source = axios.CancelToken.source(); // 这里初始化source对象
 // 设置请求头
 let myBaseURL = 'http://192.168.8.72:3000'
 // let myBaseURL = `${getIPAdress()}:3000`
@@ -40,4 +41,4 @@ service.interceptors.response.use(
   }
 );
 
-export default service
+export {service,source}

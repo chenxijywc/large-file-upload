@@ -1,4 +1,4 @@
-import request from '@/utils/request'
+import {service,source} from '@/utils/request'
 
 export interface UpDataReq{
     file:string | unknown
@@ -14,5 +14,5 @@ interface UpDataRes{
 }
 
 export function updata(data:UpDataReq,onUploadProgress:(progress:ProgressEvent)=>void) {
-    return request.post<UpDataRes>('/updata',data,{onUploadProgress})
+    return service.post<UpDataRes>('/updata',data,{onUploadProgress,cancelToken:source.token})
 }
