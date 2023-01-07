@@ -4,9 +4,13 @@ const os = require('os')
 const cors = require('cors');  
 const path = require('path');  
 var fs = require('fs');
+var mySQL = require('./mySQL');
 
 //创建wab 服务器
 const app = express()
+
+let sql1 = "select * from files where file = ?;"
+let sql2 = "insert into files(file) values(?);"
 
 // 静态文件托管,可能以后用的上
 let staticPath = path.join(__dirname,'static')
@@ -51,8 +55,21 @@ app.post('/updata', cors(), (req,res)=>{
                     allStr += needObj.file
                 }
                 // 查数据库里有没这条数据,没有就新增到数据库,有就直接返回所有接收完成
-                console.log(allStr,'完整的字符串')
-                res.send({result:1,msg:'所有接收完成'})
+                // console.log(allStr,'完整的字符串')
+                mySQL.query(sql1,[allStr],(err1,results,fields) => {
+                    if (!err1) {
+                        if(results.length > 0){
+                            console.log('不用查了,已经有了')
+                            res.send({result:1,msg:'所有接收完成'})
+                        }else{
+                            mySQL.query(sql2,[allStr],(err2) => {
+                                !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
+                            })
+                        }
+                    }
+                });
+
+                
             }else{
                 // 创建文件
                 fs.writeFile(getStaticPath(insideFileName),file,(err)=>{
