@@ -45,7 +45,7 @@
   }
   // 输入框change事件
   const inputChange = (e:Event) =>{
-    let userId = `5421-${new Date().getTime()}` // 带时间搓的用户id,标记数据的唯一性
+    let userId = `5421${new Date().getTime()}` // 带时间搓的用户id,标记数据的唯一性
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     if(!file) return
@@ -84,8 +84,8 @@
             }).catch((err)=>{
               console.log(err,'失败或者被中止了---------------------------------')
               // 其中一个失败了都中止请求,可是请求过程中其中一个请求被强制中止了也会触发这里一次
-              let {isStopRequest} = err
-              !isStopRequest ? source.cancel() : ''
+              // let {isStopRequest} = err
+              // !isStopRequest ? source.cancel() : ''
             })
           }
       })
