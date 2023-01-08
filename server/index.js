@@ -23,64 +23,78 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(cors())
 
-//监听post请求
-app.post('/updata', cors(), (req,res)=>{
+// 上传
+app.post('/update', cors(), (req,res)=>{
+    res.send({result:1,msg:'单片接收成功'})
     // file: 'd1886197f363c537534a9046d5f7f54c',
     // sliceFileSize: 5242880,
     // index: 1,
     // fileSize: 15729073,
     // fileName: '爱剪辑-我的视频44.mp4',
     // sliceNumber: 4,
-    // userId: '54211672847548219'
-    let {index,userId,file,sliceNumber} = req.body
-    // 看里边有没完全一样的文件名,没有就添加一个新的
-    let insideFileName = `${userId}-${index}`
-    // 读取目录
-    fs.readdir(staticPath,async(err,files)=>{
-        if(!err){
-            let insideFileNameArr = files.map(item => item.replace(/.txt/g, ''))
-            let otherArr = insideFileNameArr.filter(item => ~item.indexOf(userId))
-            if(otherArr.length === sliceNumber-1){
-                let allStr = ''
-                let allFileArr = [{index,file}]
-                for (const item of otherArr) {
-                    let filePath = getStaticPath(item)
-                    let fileContent = fs.readFileSync(filePath,'utf8')
-                    fs.unlink(filePath,(err)=>{})
-                    let needIndex = item.split('-')[1]
-                    allFileArr.push({index:Number(needIndex),file:fileContent})
-                }
-                for (let i = 0; i < allFileArr.length; i++) {
-                    let needObj = allFileArr.filter(item => item.index === i)[0]
-                    allStr += needObj.file
-                }
-                // 查数据库里有没这条数据,没有就新增到数据库,有就直接返回所有接收完成
-                // console.log(allStr,'完整的字符串')
-                mySQL.query(sql1,[allStr],(err1,results,fields) => {
-                    if (!err1) {
-                        if(results.length > 0){
-                            console.log('不用查了,已经有了')
-                            res.send({result:1,msg:'所有接收完成'})
-                        }else{
-                            mySQL.query(sql2,[allStr],(err2) => {
-                                !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
-                            })
-                        }
-                    }
-                });
+    // fileMd5: '54211672847548219'
+    // let {index,fileMd5,file,sliceNumber} = req.body
+    // // 看里边有没完全一样的文件名,没有就添加一个新的
+    // let insideFileName = `${fileMd5}-${index}`
+    // // 读取目录
+    // fs.readdir(staticPath,async(err,files)=>{
+    //     if(!err){
+    //         let insideFileNameArr = files.map(item => item.replace(/.txt/g, ''))
+    //         let otherArr = insideFileNameArr.filter(item => ~item.indexOf(fileMd5))
+    //         if(otherArr.length === sliceNumber-1){
+    //             let allStr = ''
+    //             let allFileArr = [{index,file}]
+    //             for (const item of otherArr) {
+    //                 let filePath = getStaticPath(item)
+    //                 let fileContent = fs.readFileSync(filePath,'utf8')
+    //                 fs.unlink(filePath,(err)=>{})
+    //                 let needIndex = item.split('-')[1]
+    //                 allFileArr.push({index:Number(needIndex),file:fileContent})
+    //             }
+    //             for (let i = 0; i < allFileArr.length; i++) {
+    //                 let needObj = allFileArr.filter(item => item.index === i)[0]
+    //                 allStr += needObj.file
+    //             }
+    //             // 查数据库里有没这条数据,没有就新增到数据库,有就直接返回所有接收完成
+    //             // console.log(allStr,'完整的字符串')
+    //             mySQL.query(sql1,[allStr],(err1,results,fields) => {
+    //                 if (!err1) {
+    //                     if(results.length > 0){
+    //                         console.log('不用查了,已经有了')
+    //                         res.send({result:1,msg:'所有接收完成,你之前已经上传过这个文件了'})
+    //                     }else{
+    //                         mySQL.query(sql2,[allStr],(err2) => {
+    //                             !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
+    //                         })
+    //                     }
+    //                 }
+    //             });
+    //         }else{
+    //             // 创建文件
+    //             fs.writeFile(getStaticPath(insideFileName),file,(err)=>{
+    //                 if(!err){
+    //                     res.send({result:1,msg:'单片接收成功'})
+    //                 }
+    //             })
+    //         }
+    //     }
+    // })
+})
 
-                
+// 查看有没这个文件
+app.post('/checkFile', cors(), (req,res)=>{
+    let {md5} = req.body
+    mySQL.query(sql1,[md5],(err1,results,fields) => {
+        if (!err1) {
+            if(results.length > 0){
+                res.send({result:-1,msg:'你之前已经上传过这个文件了'})
             }else{
-                // 创建文件
-                fs.writeFile(getStaticPath(insideFileName),file,(err)=>{
-                    if(!err){
-                        res.send({result:1,msg:'单片接收成功'})
-                    }
-                })
+                res.send({result:1,msg:'你还没上传过这个文件'})
             }
         }
-    })
+    });
 })
+
 app.get('/', cors(), (req,res)=>{
     res.send('欢迎来到大文件上传')
 })

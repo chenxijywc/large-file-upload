@@ -1,19 +1,14 @@
-import {service,source} from '@/utils/request'
+import service from '@/utils/request'
+import axios from 'axios'
 
-export interface UpDataReq{
-    file:string | unknown
-    sliceFileSize:number
-    index:number
-    fileSize:number
-    fileName:string
-    sliceNumber:number
-    userId:string
-    progressArr:Array<number>
-}
-interface UpDataRes{
-  myNameYYYYY:string
+export interface CheckFileReq{
+  md5:string | unknown
 }
 
-export function updata(data:UpDataReq,onUploadProgress:(progress:ProgressEvent)=>void) {
-    return service.post<UpDataRes>('/updata',data,{onUploadProgress,cancelToken:source.token})
+export function update(data:FormData,onUploadProgress:(progress:ProgressEvent)=>void,getCancelToken:(cancel:Function)=>void) {
+  const CancelToken = axios.CancelToken
+  return service.post('/update',data,{onUploadProgress,cancelToken:new CancelToken(getCancelToken)})
+}
+export function checkFile(data:CheckFileReq) {
+  return service.post('/checkFile',data)
 }

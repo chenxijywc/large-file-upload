@@ -1,33 +1,17 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import getIPAdress from '@/utils/getIPAdress';
+import axios, { AxiosResponse } from 'axios'
 
 interface HttpResponse<T=void> {
   data: T
 }
 
-const source = axios.CancelToken.source(); // 这里初始化source对象
 // 设置请求头
-// let myBaseURL = 'http://192.168.8.72:3000'
-let myBaseURL = 'http://192.168.56.1:3000'
-// let myBaseURL = `${getIPAdress()}:3000`
-// let { protocol,hostname,port } = window.location  //location对象里的协议地址端口
-// protocol !== "http:" ? myBaseURL =  protocol + '//' + hostname + (port ? ':'+port : '') : ''  //协议地址端口动态拼接
-axios.defaults.baseURL = myBaseURL   
+let myBaseURL = 'http://localhost:3000'
 
 // 创建axios实例
 const service = axios.create({
     baseURL: myBaseURL, // 请求头
-    // timeout: 15000 // 请求超时时间
+    timeout: 15000 // 请求超时时间
   })
-
-// 请求拦截
-service.interceptors.request.use(
-  (config: AxiosRequestConfig) => {
-    return config;
-  },(error) => {
-    return Promise.reject(error);
-  }
-);
 
 // 响应拦截
 service.interceptors.response.use(
@@ -42,4 +26,4 @@ service.interceptors.response.use(
   }
 );
 
-export {service,source}
+export default service
