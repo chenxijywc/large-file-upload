@@ -59,8 +59,10 @@
     let otherArr = allDatas.filter(item => !item.finish)
     if(otherArr.length > 0){
       allPromiseArr = [] 
+      const progressTotal = 100 - percentage.value
       for (const item of otherArr) {
-        slicesUpdate(allPromiseArr,item,otherArr.length)
+        item.progressArr = []
+        slicesUpdate(allPromiseArr,item,otherArr.length,progressTotal)
       }
     }
   }
@@ -95,14 +97,14 @@
     }
   }
   // 切片上传
-  const slicesUpdate = (allPromiseArr:Array<any>,needObj:AllDatasItem,sliceNumber:number) =>{
+  const slicesUpdate = (allPromiseArr:Array<any>,needObj:AllDatasItem,sliceNumber:number,progressTotal = 100) =>{
     let fd = new FormData()
     for (const key in needObj) {
       let value = needObj[key]
       let dataType = Object.prototype.toString.call(value)
       dataType !== '[object Array]' && ['[object File]','[object String]'].includes(dataType) ? fd.append(key,value) : fd.append(key,String(value))
     }
-    allPromiseArr.push(AllDatasItemuest(fd,needObj))
+    allPromiseArr.push(AllDatasItemuest(fd,needObj,progressTotal))
     if(allPromiseArr.length === sliceNumber){
       Promise.all(allPromiseArr).then(()=>{
         percentage.value = 100
@@ -114,7 +116,7 @@
     }
   }
   // 将上传文件请求封装成Promise,为了使用Promise.all
-  const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem) => {
+  const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,progressTotal:number) => {
     return update(fd,(progress)=>{
         let progressArr = needObj.progressArr
         let finishSize = progress.loaded
@@ -122,13 +124,13 @@
           let endItem = progressArr.slice(-1)[0]
           finishSize = finishSize - endItem
         }
-        let placeholder = 100/needObj.sliceNumber  // 每一片占100的多少
+        let placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
         let needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
         // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
-        let endNeedProgress = percentage.value + needProgress
-        percentage.value = Math.round(endNeedProgress)
+        percentage.value = percentage.value + needProgress
         progress.loaded === progress.total ? needObj.finish = true : ''  // 这一片完全加载完就将指定对象设置属性为true
+        console.log(percentage.value)
       },(cancel)=>{
           needObj.cancel = cancel   
       })
