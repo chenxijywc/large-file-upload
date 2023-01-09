@@ -1,10 +1,11 @@
 const express = require('express')
-var bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 const os = require('os')
 const cors = require('cors');  
 const path = require('path');  
-var fs = require('fs');
-var mySQL = require('./mySQL');
+const fs = require('fs');
+const mySQL = require('./mySQL');
+const multiparty = require("multiparty");
 
 //创建wab 服务器
 const app = express()
@@ -25,14 +26,26 @@ app.use(cors())
 
 // 上传
 app.post('/update', cors(), (req,res)=>{
-    res.send({result:1,msg:'单片接收成功'})
-    // file: 'd1886197f363c537534a9046d5f7f54c',
+    res.send({result:1,msg:'单片上传完成'})
+    // file: [Object File],
     // sliceFileSize: 5242880,
     // index: 1,
     // fileSize: 15729073,
     // fileName: '爱剪辑-我的视频44.mp4',
     // sliceNumber: 4,
     // fileMd5: '54211672847548219'
+    // const multipart = new multiparty.Form();
+    // multipart.parse(req, async (err, fields, files) => {
+    //   if (!err) {
+    //     let file = files[0]
+    //     let {fileMd5,fileName} = fields
+    //     console.log('单片上传完成')
+    //     res.send({result:1,msg:'单片上传完成'})
+    //   }else{
+    //     res.send({result:-1,msg:err})
+    //   }
+    //   return
+    // })  
     // let {index,fileMd5,file,sliceNumber} = req.body
     // // 看里边有没完全一样的文件名,没有就添加一个新的
     // let insideFileName = `${fileMd5}-${index}`

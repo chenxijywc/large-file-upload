@@ -29,7 +29,8 @@
   }
   // 显示到视图层的初始数据:
   const percentage = ref(0)
-  let unit = 1024*1024*5  //每个切片的大小定位5m
+  let unit = 1024*1024*100  //每个切片的大小定位5m
+  // let unit = 1024*1024*5  //每个切片的大小定位5m
   let allDatas:Array<AllDatasItem> = []
   let allPromiseArr:Array<any> = []  // 所有分片的请求
   const customColors = [
@@ -79,10 +80,11 @@
       let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
       allPromiseArr = []  // 清空分片请求
       for (let i = 0; i < sliceNumber; i++) {
-        let sliceFile = file.slice(i*unit,i*unit+unit)
+        let sliceFile = file.slice(i*unit,i*unit+unit) 
+        console.log(file,'file')
         let needObj:AllDatasItem = {
-          file,
-          fileMd5,
+          file:sliceFile,
+          fileMd5:`${fileMd5}-${i}`,
           sliceFileSize:sliceFile.size,
           index:i,
           fileSize:file.size,
@@ -99,11 +101,14 @@
   // 切片上传
   const slicesUpdate = (allPromiseArr:Array<any>,needObj:AllDatasItem,sliceNumber:number,progressTotal = 100) =>{
     let fd = new FormData()
-    for (const key in needObj) {
-      let value = needObj[key]
-      let dataType = Object.prototype.toString.call(value)
-      dataType !== '[object Array]' && ['[object File]','[object String]'].includes(dataType) ? fd.append(key,value) : fd.append(key,String(value))
-    }
+    // for (const key in needObj) {
+    //   let value = needObj[key]
+    //   let dataType = Object.prototype.toString.call(value)
+    //   dataType !== '[object Array]' && ['[object Blob]','[object File]','[object String]'].includes(dataType) ? fd.append(key,value) : fd.append(key,String(value))
+    // }
+    console.log(needObj.file,'needObj.file')
+    fd.append('file',needObj.file)
+    return
     allPromiseArr.push(AllDatasItemuest(fd,needObj,progressTotal))
     if(allPromiseArr.length === sliceNumber){
       Promise.all(allPromiseArr).then(()=>{
@@ -117,6 +122,8 @@
   }
   // 将上传文件请求封装成Promise,为了使用Promise.all
   const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,progressTotal:number) => {
+    // for (let [a, b] of fd.entries()) { console.log(`${a}: ${b}`) }
+    // return
     return update(fd,(progress)=>{
         let progressArr = needObj.progressArr
         let finishSize = progress.loaded
