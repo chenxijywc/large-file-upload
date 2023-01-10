@@ -26,7 +26,6 @@ app.use(cors())
 
 // 上传
 app.post('/update', cors(), (req,res)=>{
-    res.send({result:1,msg:'单片上传完成'})
     // file: [Object File],
     // sliceFileSize: 5242880,
     // index: 1,
@@ -34,21 +33,18 @@ app.post('/update', cors(), (req,res)=>{
     // fileName: '爱剪辑-我的视频44.mp4',
     // sliceNumber: 4,
     // fileMd5: '54211672847548219'
-    // const multipart = new multiparty.Form();
-    // multipart.parse(req, async (err, fields, files) => {
-    //   if (!err) {
-    //     let file = files[0]
-    //     let {fileMd5,fileName} = fields
-    //     console.log('单片上传完成')
-    //     res.send({result:1,msg:'单片上传完成'})
-    //   }else{
-    //     res.send({result:-1,msg:err})
-    //   }
-    //   return
-    // })  
-    // let {index,fileMd5,file,sliceNumber} = req.body
+    const multipart = new multiparty.Form();
+    multipart.parse(req, async (err, fields, files) => {
+      if (!err) {
+        let file = files[0]
+        let {fileMd5,fileName,sliceNumber,index} = fields
+        console.log('单片上传完成')
+        res.send({result:1,msg:'单片上传完成',data:{fields,files}})
+      }else{
+        res.send({result:-1,msg:err})
+      }
+    })  
     // // 看里边有没完全一样的文件名,没有就添加一个新的
-    // let insideFileName = `${fileMd5}-${index}`
     // // 读取目录
     // fs.readdir(staticPath,async(err,files)=>{
     //     if(!err){
@@ -96,16 +92,16 @@ app.post('/update', cors(), (req,res)=>{
 
 // 查看有没这个文件
 app.post('/checkFile', cors(), (req,res)=>{
-    let {md5} = req.body
-    mySQL.query(sql1,[md5],(err1,results,fields) => {
-        if (!err1) {
-            if(results.length > 0){
-                res.send({result:-1,msg:'你之前已经上传过这个文件了'})
-            }else{
+    // let {md5} = req.body
+    // mySQL.query(sql1,[md5],(err1,results,fields) => {
+    //     if (!err1) {
+    //         if(results.length > 0){
+    //             res.send({result:-1,msg:'你之前已经上传过这个文件了'})
+    //         }else{
                 res.send({result:1,msg:'你还没上传过这个文件'})
-            }
-        }
-    });
+    //         }
+    //     }
+    // });
 })
 
 app.get('/', cors(), (req,res)=>{

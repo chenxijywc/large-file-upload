@@ -16,8 +16,8 @@
   import {update,checkFile} from '@/api/home'
   import SparkMD5 from "spark-md5";
   interface AllDatasItem{
-    file:File | unknown
-    fileMd5:string | unknown
+    file:File | Blob
+    fileMd5:string
     sliceFileSize:number
     index:number
     fileSize:number
@@ -29,8 +29,8 @@
   }
   // 显示到视图层的初始数据:
   const percentage = ref(0)
-  let unit = 1024*1024*100  //每个切片的大小定位5m
-  // let unit = 1024*1024*5  //每个切片的大小定位5m
+  // let unit = 1024*1024*100  //每个切片的大小定位5m
+  let unit = 1024*1024*5  //每个切片的大小定位5m
   let allDatas:Array<AllDatasItem> = []
   let allPromiseArr:Array<any> = []  // 所有分片的请求
   const customColors = [
@@ -75,13 +75,14 @@
     let res = await encryptionMd5(file)
     let fileMd5 = res
     let resB = await checkFile({md5:fileMd5})
+    console.log(resB,'resB')
     // 返回1说明数据库没有
     if(resB.result === 1){
       let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
       allPromiseArr = []  // 清空分片请求
       for (let i = 0; i < sliceNumber; i++) {
         let sliceFile = file.slice(i*unit,i*unit+unit) 
-        console.log(file,'file')
+        console.log(sliceFile,'file')
         let needObj:AllDatasItem = {
           file:sliceFile,
           fileMd5:`${fileMd5}-${i}`,
@@ -101,19 +102,19 @@
   // 切片上传
   const slicesUpdate = (allPromiseArr:Array<any>,needObj:AllDatasItem,sliceNumber:number,progressTotal = 100) =>{
     let fd = new FormData()
-    // for (const key in needObj) {
-    //   let value = needObj[key]
-    //   let dataType = Object.prototype.toString.call(value)
-    //   dataType !== '[object Array]' && ['[object Blob]','[object File]','[object String]'].includes(dataType) ? fd.append(key,value) : fd.append(key,String(value))
-    // }
-    console.log(needObj.file,'needObj.file')
-    fd.append('file',needObj.file)
-    return
+    let {file,fileMd5,sliceFileSize,index,fileSize,fileName} = needObj
+    fd.append('file',file)
+    fd.append('fileMd5',fileMd5)
+    fd.append('sliceFileSize',String(sliceFileSize))
+    fd.append('index',String(index))
+    fd.append('fileSize',String(fileSize))
+    fd.append('fileName',fileName)
+    fd.append('sliceNumber',String(sliceNumber))
     allPromiseArr.push(AllDatasItemuest(fd,needObj,progressTotal))
     if(allPromiseArr.length === sliceNumber){
-      Promise.all(allPromiseArr).then(()=>{
+      Promise.all(allPromiseArr).then((res)=>{
         percentage.value = 100
-        console.log('所有都完成了---------------------------------')
+        console.log(res,'所有都完成了---------------------------------')
       }).catch((err)=>{
         // 其中一个失败了都中止请求,可是请求过程中其中一个请求被强制中止了也会触发这里一次
         err.message !== 'stopRequest' ? stopUpdate() : ''
@@ -123,7 +124,7 @@
   // 将上传文件请求封装成Promise,为了使用Promise.all
   const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,progressTotal:number) => {
     // for (let [a, b] of fd.entries()) { console.log(`${a}: ${b}`) }
-    // return
+    console.log(needObj,'needObj')
     return update(fd,(progress)=>{
         let progressArr = needObj.progressArr
         let finishSize = progress.loaded
@@ -137,7 +138,7 @@
         progressArr.push(progress.loaded)
         percentage.value = percentage.value + needProgress
         progress.loaded === progress.total ? needObj.finish = true : ''  // 这一片完全加载完就将指定对象设置属性为true
-        console.log(percentage.value)
+        // console.log(percentage.value)
       },(cancel)=>{
           needObj.cancel = cancel   
       })
