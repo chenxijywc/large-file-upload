@@ -1,11 +1,11 @@
 const express = require('express')
-const bodyParser = require('body-parser');
+const bodyParser = require('body-parser')
 const os = require('os')
-const cors = require('cors');  
-const path = require('path');  
-const fs = require('fs');
-const mySQL = require('./mySQL');
-const multiparty = require("multiparty");
+const cors = require('cors')
+const path = require('path')
+const fs = require('fs')
+const mySQL = require('./mySQL')
+const multiparty = require("multiparty")
 
 //创建wab 服务器
 const app = express()
@@ -32,13 +32,29 @@ app.post('/update', cors(), (req,res)=>{
     // fileSize: 15729073,
     // fileName: '爱剪辑-我的视频44.mp4',
     // sliceNumber: 4,
-    // fileMd5: '54211672847548219'
+    // fileMd5: '54211672847548219-0'
     const multipart = new multiparty.Form();
     multipart.parse(req, async (err, fields, files) => {
       if (!err) {
-        let file = files[0]
-        let {fileMd5,fileName,sliceNumber,index} = fields
-        console.log('单片上传完成')
+        let file = files.file[0]
+        let [fileMd5] = fields.fileMd5
+        let [fileName] = fields.fileName
+        let sliceNumber = Number(fields.sliceNumber[0])
+        let index = Number(fields.index[0])
+        let nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) // 文件后缀
+        let folderPath = path.join(staticPath,fileMd5.split('-')[0])
+        let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
+        if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }
+            const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
+            const ws = fs.createWriteStream(dirPath)  // 创建可写流
+            ws.write(buffer)
+            ws.close()
+            if(index === sliceNumber-1){
+                console.log(index,'最后一个了')
+                // let endDirPath = path.join(staticPath,fileName)  
+                // const endWs = fs.createWriteStream(endDirPath)  // 创建可写流
+            }
+        
         res.send({result:1,msg:'单片上传完成',data:{fields,files}})
       }else{
         res.send({result:-1,msg:err})
