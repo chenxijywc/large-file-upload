@@ -12,6 +12,7 @@ const app = express()
 
 let sql1 = "select * from files where file = ?;"
 let sql2 = "insert into files(file) values(?);"
+let sql3 = "insert into files set ?;"
 
 // 静态文件托管,可能以后用的上
 let staticPath = path.join(__dirname,'static')
@@ -26,13 +27,6 @@ app.use(cors())
 
 // 上传
 app.post('/update', cors(), (req,res)=>{
-    // file: [Object File],
-    // sliceFileSize: 5242880,
-    // index: 1,
-    // fileSize: 15729073,
-    // fileName: '爱剪辑-我的视频44.mp4',
-    // sliceNumber: 4,
-    // fileMd5: '54211672847548219-0'
     const multipart = new multiparty.Form();
     multipart.parse(req, async (err, fields, files) => {
       if (!err) {
@@ -42,69 +36,40 @@ app.post('/update', cors(), (req,res)=>{
         let sliceNumber = Number(fields.sliceNumber[0])
         let index = Number(fields.index[0])
         let nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) // 文件后缀
-        let folderPath = path.join(staticPath,fileMd5.split('-')[0])
+        let justMd5 = fileMd5.split('-')[0]
+        let folderPath = path.join(staticPath,justMd5)
         let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
-        if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }
-            const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
-            const ws = fs.createWriteStream(dirPath)  // 创建可写流
-            ws.write(buffer)
-            ws.close()
-            if(index === sliceNumber-1){
-                console.log(index,'最后一个了')
-                // let endDirPath = path.join(staticPath,fileName)  
-                // const endWs = fs.createWriteStream(endDirPath)  // 创建可写流
-            }
-        
-        res.send({result:1,msg:'单片上传完成',data:{fields,files}})
+        if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }  // static文件夹一定要保证有,否则就会报错
+        const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
+        const ws = fs.createWriteStream(dirPath)  // 创建可写流
+        ws.write(buffer)  // 写入可写流
+        ws.close()
+        if(index === sliceNumber-1){
+            // 这里好加个定时器.等上边的写入完成处理完.否则获取到文件夹里的数量会比预期的少
+            setTimeout(() => { 
+                mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
+                    fs.rmdirSync(folderPath)  // 删除文件夹
+                    let needObj = {
+                        url:endPathUrl,
+                        name:fileName,
+                        md5:justMd5
+                    }
+                    res.send({result:1,msg:'所有接收完成'})
+                    // 放到数据库,响应客户端所有接收完成
+                    // mySQL.query(sql3,needObj,(err2) => {
+                    //     !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
+                    // })
+                })
+            }, 100)
+        }else{
+            res.send({result:1,msg:'单片上传完成',data:{fields,files}})
+        }
       }else{
         res.send({result:-1,msg:err})
       }
     })  
-    // // 看里边有没完全一样的文件名,没有就添加一个新的
-    // // 读取目录
-    // fs.readdir(staticPath,async(err,files)=>{
-    //     if(!err){
-    //         let insideFileNameArr = files.map(item => item.replace(/.txt/g, ''))
-    //         let otherArr = insideFileNameArr.filter(item => ~item.indexOf(fileMd5))
-    //         if(otherArr.length === sliceNumber-1){
-    //             let allStr = ''
-    //             let allFileArr = [{index,file}]
-    //             for (const item of otherArr) {
-    //                 let filePath = getStaticPath(item)
-    //                 let fileContent = fs.readFileSync(filePath,'utf8')
-    //                 fs.unlink(filePath,(err)=>{})
-    //                 let needIndex = item.split('-')[1]
-    //                 allFileArr.push({index:Number(needIndex),file:fileContent})
-    //             }
-    //             for (let i = 0; i < allFileArr.length; i++) {
-    //                 let needObj = allFileArr.filter(item => item.index === i)[0]
-    //                 allStr += needObj.file
-    //             }
-    //             // 查数据库里有没这条数据,没有就新增到数据库,有就直接返回所有接收完成
-    //             // console.log(allStr,'完整的字符串')
-    //             mySQL.query(sql1,[allStr],(err1,results,fields) => {
-    //                 if (!err1) {
-    //                     if(results.length > 0){
-    //                         console.log('不用查了,已经有了')
-    //                         res.send({result:1,msg:'所有接收完成,你之前已经上传过这个文件了'})
-    //                     }else{
-    //                         mySQL.query(sql2,[allStr],(err2) => {
-    //                             !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
-    //                         })
-    //                     }
-    //                 }
-    //             });
-    //         }else{
-    //             // 创建文件
-    //             fs.writeFile(getStaticPath(insideFileName),file,(err)=>{
-    //                 if(!err){
-    //                     res.send({result:1,msg:'单片接收成功'})
-    //                 }
-    //             })
-    //         }
-    //     }
-    // })
 })
+
 
 // 查看有没这个文件
 app.post('/checkFile', cors(), (req,res)=>{
@@ -124,24 +89,35 @@ app.get('/', cors(), (req,res)=>{
     res.send('欢迎来到大文件上传')
 })
 
-// 读取所有文件
-function isReadFile(fileName){
-    new Promise((resolve,reject)=>{
-        fs.readFile(getStaticPath(fileName),'utf-8',(err,data)=>{
-            if(!err){
-                resolve(data)
-            }else{
-                reject(err)
+// 合并分片
+function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
+    fs.readdir(folderPath,(err,data)=>{
+        if(!err){
+            const pathArr = []
+            for (let i = 0; i < data.length; i++) {
+                let needPath = data.filter(item => item.split('-')[1].split('.')[0] === String(i))[0]
+                pathArr.push(path.join(folderPath,needPath)) 
             }
-        })  
-    })
+            console.log(pathArr.length,'pathArr')
+            const endPathUrl = path.join(staticPath,`${fileMd5.split('-')[0]}${nameSuffix}`)
+            const endWs = fs.createWriteStream(endPathUrl,{flags:'a'})  // 创建可写流,a表示追加内容
+            // 将追加添加到文档流封装成一个方法,循环调用
+            const addStream = (pathArr)=>{
+                let path = pathArr.shift()  // 删除数组的第一个并返回第一个
+                const buffer = fs.readFileSync(path)  // 根据file对象的路径获取file对象里的内容
+                endWs.write(buffer)  
+                fs.unlinkSync(path)  // 追加完就删除文件
+                if(pathArr.length > 0){
+                    addStream(pathArr)
+                }else{
+                    endWs.close()
+                    cb(endPathUrl)
+                }
+            }
+            addStream(pathArr)
+        }
+    }) 
 }
-
-// 获取文件的路径
-function getStaticPath(fileName){
-    return path.join(staticPath,`${fileName}.txt`)
-}
-
 // 获取ip地址
 function getIPAdress() {
     var interfaces = os.networkInterfaces();
