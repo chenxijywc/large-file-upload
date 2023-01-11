@@ -82,7 +82,7 @@
       allPromiseArr = []  // 清空分片请求
       for (let i = 0; i < sliceNumber; i++) {
         let sliceFile = file.slice(i*unit,i*unit+unit) 
-        console.log(sliceFile,'file')
+        // console.log(sliceFile,'file')
         let needObj:AllDatasItem = {
           file:sliceFile,
           fileMd5:`${fileMd5}-${i}`,
@@ -116,15 +116,16 @@
         percentage.value = 100
         console.log(res,'所有都完成了---------------------------------')
       }).catch((err)=>{
+        console.log()
         // 其中一个失败了都中止请求,可是请求过程中其中一个请求被强制中止了也会触发这里一次
-        err.message !== 'stopRequest' ? stopUpdate() : ''
+        // 如果其中一个失败就就将那一切片再次发送请求
+        console.log(err,'失败了')
+        // err.message !== 'stopRequest' ? stopUpdate() : ''
       })
     }
   }
   // 将上传文件请求封装成Promise,为了使用Promise.all
   const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,progressTotal:number) => {
-    // for (let [a, b] of fd.entries()) { console.log(`${a}: ${b}`) }
-    console.log(needObj,'needObj')
     return update(fd,(progress)=>{
         let progressArr = needObj.progressArr
         let finishSize = progress.loaded
@@ -136,9 +137,9 @@
         let needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
         // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
-        percentage.value = percentage.value + needProgress
+        let enPercentage = Math.round(percentage.value + needProgress)
+        if(percentage.value < enPercentage && percentage.value > 100){ percentage.value = enPercentage }
         progress.loaded === progress.total ? needObj.finish = true : ''  // 这一片完全加载完就将指定对象设置属性为true
-        // console.log(percentage.value)
       },(cancel)=>{
           needObj.cancel = cancel   
       })
