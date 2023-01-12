@@ -131,6 +131,8 @@ import { resolve } from 'path';
     fd.append('sliceNumber',String(sliceNumber))
     AllDatasItemuest(fd,needObj,progressTotal).then((res)=>{
       finishNumber++
+      console.log(finishNumber,'finishNumber')
+      console.log(sliceNumber,'sliceNumber')
       if(finishNumber === sliceNumber){
         percentage.value = 100
         state.value = 3

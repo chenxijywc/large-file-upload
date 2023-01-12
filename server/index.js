@@ -35,6 +35,7 @@ app.post('/update', cors(), (req,res)=>{
         let [fileName] = fields.fileName
         let sliceNumber = Number(fields.sliceNumber[0])
         let index = Number(fields.index[0])
+        let closeSlice = 0
         let nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) // 文件后缀
         let justMd5 = fileMd5.split('-')[0]
         let folderPath = path.join(staticPath,justMd5)
@@ -44,9 +45,11 @@ app.post('/update', cors(), (req,res)=>{
         const ws = fs.createWriteStream(dirPath)  // 创建可写流
         ws.write(buffer)  // 写入可写流
         ws.close()
-        if(index === sliceNumber-1){
-            // 这里好加个定时器.等上边的写入完成处理完.否则获取到文件夹里的数量会比预期的少
-            setTimeout(() => { 
+        ws.on('close',()=>{
+            closeSlice++
+            console.log(closeSlice,'closeSlice')
+            if(closeSlice === sliceNumber){
+                console.log(closeSlice,'都关闭了')
                 mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
                     fs.rmdirSync(folderPath)  // 删除文件夹
                     let needObj = {
@@ -60,10 +63,10 @@ app.post('/update', cors(), (req,res)=>{
                     //     !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
                     // })
                 })
-            }, 100)
-        }else{
-            res.send({result:1,msg:'单片上传完成',data:{fields,files}})
-        }
+            }else{
+                res.send({result:1,msg:'单片上传完成',data:{fields,files}})
+            }
+        })
       }else{
         res.send({result:-1,msg:err})
       }
