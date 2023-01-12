@@ -1,6 +1,13 @@
 <template>
   <div class="page">
-    <el-progress :text-inside="true" :stroke-width="20" :percentage="percentage" status="success" :color="customColors"/>
+    <div class="progressBox">
+      <div v-if="state === 0" style="height:24px;width: 100%;margin-bottom: 10px;"></div>
+      <p v-else-if="state === 1">文件正在处理中...</p>
+      <p v-else-if="state === 2">文件正在上传中...</p>
+      <p v-else-if="state === 3">上传完成</p>
+      <p v-else-if="state === 4">上传失败</p>
+      <el-progress :text-inside="true" :stroke-width="20" :percentage="percentage" status="success" :color="customColors"/>
+    </div>
     <div class="topBox"> 
       <input type="file" class="isInput" @change="inputChange">
     </div>
@@ -15,6 +22,7 @@
   import { onMounted, ref } from 'vue'
   import {update,checkFile} from '@/api/home'
   import SparkMD5 from "spark-md5";
+import { resolve } from 'path';
   interface AllDatasItem{
     file:File | Blob
     fileMd5:string
@@ -23,16 +31,20 @@
     fileSize:number
     fileName:string
     sliceNumber:number
-    progressArr:Array<number>
+    progressArr:Array<number>  // 所有进度数组
+    hashProgress:number
     cancel?:Function
     finish?:boolean
   }
   // 显示到视图层的初始数据:
   const percentage = ref(0)
+  const state = ref(0)
   // let unit = 1024*1024*100  //每个切片的大小定位5m
   let unit = 1024*1024*5  //每个切片的大小定位5m
   let allDatas:Array<AllDatasItem> = []
   let allPromiseArr:Array<any> = []  // 所有分片的请求
+  let finishNumber = 0  //请求完成的个数
+  let errNumber = 0  // 报错的个数
   const customColors = [
     { color: '#f56c6c', percentage: 20 },
     { color: '#e6a23c', percentage: 40 },
@@ -50,6 +62,7 @@
     let isInput = document.querySelector('.isInput') as HTMLInputElement
     isInput.value = ''
     percentage.value = 0 
+    state.value = 0 
   }
   // 中止上传
   const stopUpdate = () =>{
@@ -59,11 +72,10 @@
   const goonUpdate = () =>{
     let otherArr = allDatas.filter(item => !item.finish)
     if(otherArr.length > 0){
-      allPromiseArr = [] 
       const progressTotal = 100 - percentage.value
       for (const item of otherArr) {
         item.progressArr = []
-        slicesUpdate(allPromiseArr,item,otherArr.length,progressTotal)
+        slicesUpdate(item,otherArr.length,progressTotal)
       }
     }
   }
@@ -72,17 +84,24 @@
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     if(!file) return
+    state.value = 1
     let res = await encryptionMd5(file)
+    state.value = 2
     let fileMd5 = res
-    let resB = await checkFile({md5:fileMd5})
-    console.log(resB,'resB')
+    let resB = await checkFile({md5:fileMd5}).catch(()=>{})
     // 返回1说明数据库没有
-    if(resB.result === 1){
+    if(resB && resB.result === 1){
       let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-      allPromiseArr = []  // 清空分片请求
+      let requestNumber = 0
       for (let i = 0; i < sliceNumber; i++) {
+        // 满6个就推迟代码1秒
+        if(requestNumber === 6){
+          await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
+          requestNumber = 0
+        }
+        // 没满就继续请求
+        requestNumber++
         let sliceFile = file.slice(i*unit,i*unit+unit) 
-        // console.log(sliceFile,'file')
         let needObj:AllDatasItem = {
           file:sliceFile,
           fileMd5:`${fileMd5}-${i}`,
@@ -95,12 +114,12 @@
           finish:false
         }
         allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
-        slicesUpdate(allPromiseArr,needObj,sliceNumber)
+        slicesUpdate(needObj,sliceNumber)
       }
     }
   }
   // 切片上传
-  const slicesUpdate = (allPromiseArr:Array<any>,needObj:AllDatasItem,sliceNumber:number,progressTotal = 100) =>{
+  const slicesUpdate = (needObj:AllDatasItem,sliceNumber:number,progressTotal = 100) =>{
     let fd = new FormData()
     let {file,fileMd5,sliceFileSize,index,fileSize,fileName} = needObj
     fd.append('file',file)
@@ -110,19 +129,23 @@
     fd.append('fileSize',String(fileSize))
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
-    allPromiseArr.push(AllDatasItemuest(fd,needObj,progressTotal))
-    if(allPromiseArr.length === sliceNumber){
-      Promise.all(allPromiseArr).then((res)=>{
+    AllDatasItemuest(fd,needObj,progressTotal).then((res)=>{
+      finishNumber++
+      if(finishNumber === sliceNumber){
         percentage.value = 100
+        state.value = 3
         console.log(res,'所有都完成了---------------------------------')
-      }).catch((err)=>{
-        console.log()
-        // 其中一个失败了都中止请求,可是请求过程中其中一个请求被强制中止了也会触发这里一次
-        // 如果其中一个失败就就将那一切片再次发送请求
-        console.log(err,'失败了')
-        // err.message !== 'stopRequest' ? stopUpdate() : ''
-      })
-    }
+      }
+    }).catch((err)=>{
+      console.log(err,'失败了')
+      errNumber++ 
+      // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
+       if(errNumber > 3){
+          state.value = 4
+          stopUpdate()
+       }
+
+    })
   }
   // 将上传文件请求封装成Promise,为了使用Promise.all
   const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,progressTotal:number) => {
@@ -137,9 +160,11 @@
         let needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
         // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
-        let enPercentage = Math.round(percentage.value + needProgress)
-        if(percentage.value < enPercentage && percentage.value > 100){ percentage.value = enPercentage }
+        let enPercentage = percentage.value + needProgress
+        // let enPercentage = Math.round(percentage.value + needProgress)
+        if(percentage.value < enPercentage && percentage.value < 100){ percentage.value = enPercentage }
         progress.loaded === progress.total ? needObj.finish = true : ''  // 这一片完全加载完就将指定对象设置属性为true
+        // console.log(percentage.value)
       },(cancel)=>{
           needObj.cancel = cancel   
       })
@@ -151,6 +176,7 @@
       let reader = new FileReader()
       reader.readAsArrayBuffer(file)
       reader.onload = (event:ProgressEvent) => {
+        console.log(event.target,'event.target')
         let target = event.target as FileReader
         let str = target.result
         sparkMD52.append(str)
@@ -167,4 +193,5 @@
   .page{padding:80px;max-width:1000px;margin:0 auto;}
   .topBox{text-align: center;padding: 80px;}
   :deep(.el-progress-bar__innerText){color: black;}
+  .progressBox>p{margin-bottom: 10px;}
 </style>
