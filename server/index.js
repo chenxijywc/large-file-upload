@@ -33,38 +33,15 @@ app.post('/update', cors(), (req,res)=>{
         let file = files.file[0]
         let [fileMd5] = fields.fileMd5
         let [fileName] = fields.fileName
-        let sliceNumber = Number(fields.sliceNumber[0])
-        let index = Number(fields.index[0])
-        let closeSlice = 0
         let nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) // 文件后缀
         let justMd5 = fileMd5.split('-')[0]
         let folderPath = path.join(staticPath,justMd5)
         let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
         if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }  // static文件夹一定要保证有,否则就会报错
         const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
-        const ws = fs.createWriteStream(dirPath)  // 创建可写流
-        ws.write(buffer)  // 写入可写流
-        ws.close()
-        ws.on('close',()=>{
-            closeSlice++
-            console.log(closeSlice,'closeSlice')
-            if(closeSlice === sliceNumber){
-                console.log(closeSlice,'都关闭了')
-                mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
-                    fs.rmdirSync(folderPath)  // 删除文件夹
-                    let needObj = {
-                        url:endPathUrl,
-                        name:fileName,
-                        md5:justMd5
-                    }
-                    res.send({result:1,msg:'所有接收完成'})
-                    // 放到数据库,响应客户端所有接收完成
-                    // mySQL.query(sql3,needObj,(err2) => {
-                    //     !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
-                    // })
-                })
-            }else{
-                res.send({result:1,msg:'单片上传完成',data:{fields,files}})
+        fs.writeFile(dirPath,buffer,(err)=>{
+            if(!err){
+                res.send({result:1,msg:'单片上传完成',data:{folderPath,fileMd5,justMd5,nameSuffix,fileName}})
             }
         })
       }else{
@@ -73,6 +50,20 @@ app.post('/update', cors(), (req,res)=>{
     })  
 })
 
+// 根据md5标识合并所有切片
+app.post('/mergeSlice', cors(), (req,res)=>{
+    let {folderPath,fileMd5,justMd5,nameSuffix,fileName} = req.body
+    console.log(folderPath,fileMd5,justMd5,nameSuffix,fileName,'我是合并所有切片接口')
+    mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
+        fs.rmdirSync(folderPath)  // 删除文件夹
+        let needObj = { url:endPathUrl, name:fileName, md5:justMd5 }
+        res.send({result:1,msg:'合并完成'})
+        // 放到数据库,响应客户端所有接收完成
+        // mySQL.query(sql3,needObj,(err2) => {
+        //     !err2 ? res.send({result:1,msg:'所有接收完成'}) : ''
+        // })
+    })
+})
 
 // 查看有没这个文件
 app.post('/checkFile', cors(), (req,res)=>{

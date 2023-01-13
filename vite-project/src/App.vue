@@ -20,7 +20,7 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
-  import {update,checkFile} from '@/api/home'
+  import {update,checkFile,mergeSlice} from '@/api/home'
   import SparkMD5 from "spark-md5";
 import { resolve } from 'path';
   interface AllDatasItem{
@@ -129,14 +129,18 @@ import { resolve } from 'path';
     fd.append('fileSize',String(fileSize))
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
-    AllDatasItemuest(fd,needObj,progressTotal).then((res)=>{
+    AllDatasItemuest(fd,needObj,progressTotal).then(async(res)=>{
       finishNumber++
       console.log(finishNumber,'finishNumber')
       console.log(sliceNumber,'sliceNumber')
       if(finishNumber === sliceNumber){
-        percentage.value = 100
-        state.value = 3
-        console.log(res,'所有都完成了---------------------------------')
+        let resB = await mergeSlice(res.data).catch(()=>{})
+        if(resB && resB.result === 1){
+          percentage.value = 100
+          state.value = 3
+          console.log(resB,'所有都完成了---------------------------------')
+        }
+        finishNumber = 0
       }
     }).catch((err)=>{
       console.log(err,'失败了')
