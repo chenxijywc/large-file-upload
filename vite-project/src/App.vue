@@ -20,27 +20,13 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref } from 'vue'
-  import {update,checkFile,mergeSlice} from '@/api/home'
+  import {update,checkFile,mergeSlice,AllDatasItem} from '@/api/home'
   import SparkMD5 from "spark-md5";
-  interface AllDatasItem{
-    file:File | Blob
-    fileMd5:string
-    sliceFileSize:number
-    index:number
-    fileSize:number
-    fileName:string
-    sliceNumber:number
-    progressArr:Array<number>  // 所有进度数组
-    cancel?:Function
-    finish?:boolean
-  }
   // 显示到视图层的初始数据:
   const percentage = ref(0)
   const state = ref(0)
-  // let unit = 1024*1024*100  //每个切片的大小定位5m
   let unit = 1024*1024*5  //每个切片的大小定位5m
-  let allDatas:Array<AllDatasItem> = []
-  let allPromiseArr:Array<any> = []  // 所有分片的请求
+  let allDatas:Array<AllDatasItem> = []  // 所有请求的数据
   let finishNumber = 0  //请求完成的个数
   let errNumber = 0  // 报错的个数
   const customColors = [
@@ -65,6 +51,9 @@
   // 中止上传
   const stopUpdate = () =>{
     allDatas.map((item) => { item.cancel ? item.cancel('stopRequest') : '' })
+    // 将所有没有完成的请求数据发送到服务器
+    let otherArr = allDatas.filter(item => !item.finish)
+    // sendUnfinished({unfinishArr:otherArr})
   }
   // 继续上传
   const goonUpdate = () =>{
@@ -82,6 +71,8 @@
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     if(!file) return
+    console.log(e,'file')
+    console.log(file.path,'file')
     state.value = 1
     // let res = await encryptionMd5(file)
     let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
@@ -120,6 +111,9 @@
             allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
             slicesUpdate(needObj,sliceNumber)
           }
+        }else{
+          state.value = 4
+          stopUpdate()
         }
       }
     }
@@ -149,7 +143,7 @@
         finishNumber = 0
       }
     }).catch((err)=>{
-      console.log(err,'失败了')
+      console.log(err.data,'失败了')
       errNumber++ 
       // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
        if(errNumber > 3){

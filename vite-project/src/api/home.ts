@@ -1,6 +1,18 @@
 import service from '@/utils/request'
 import axios from 'axios'
 
+export interface AllDatasItem{
+  file:File | Blob
+  fileMd5:string
+  sliceFileSize:number
+  index:number
+  fileSize:number
+  fileName:string
+  sliceNumber:number
+  progressArr:Array<number>  // 所有进度数组
+  cancel?:Function
+  finish?:boolean
+}
 export interface CheckFileReq{
   md5:string | unknown
 }
@@ -10,6 +22,9 @@ export interface mergeSliceReq{
   justMd5:string
   nameSuffix:string
   fileName:string
+}
+export interface sendUnfinishedReq{
+  unfinishArr:Array<AllDatasItem>
 }
 
 // 查看文件
@@ -25,3 +40,11 @@ export function update(data:FormData,onUploadProgress:(progress:ProgressEvent)=>
 export function mergeSlice(data:mergeSliceReq) {
   return service.post('/mergeSlice',data)
 }
+// 中止上传接口
+export function sendUnfinished(data:sendUnfinishedReq) {
+  return service.post('/sendUnfinished',data)
+}
+// 继续上传接口
+// export function goonUpdate(data:goonUpdateReq) {
+//   return service.post('/goonUpdate',data)
+// }

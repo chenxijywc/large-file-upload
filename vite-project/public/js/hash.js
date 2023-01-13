@@ -11,10 +11,10 @@ self.onmessage = e =>{
       sparkMD52.append(str)
       var md = sparkMD52.end() 
       self.postMessage({name:"succee",data:md})
-      self.close()
+      self.close()  
     }
     reader.onerror = (err) => {
-        self.postMessage({name:"error",data:err})
-        self.close()
+      self.postMessage({name:"error",data:err})
+      self.close()
     }
 }
