@@ -22,7 +22,6 @@
   import { onMounted, ref } from 'vue'
   import {update,checkFile,mergeSlice} from '@/api/home'
   import SparkMD5 from "spark-md5";
-import { resolve } from 'path';
   interface AllDatasItem{
     file:File | Blob
     fileMd5:string
@@ -32,7 +31,6 @@ import { resolve } from 'path';
     fileName:string
     sliceNumber:number
     progressArr:Array<number>  // 所有进度数组
-    hashProgress:number
     cancel?:Function
     finish?:boolean
   }
@@ -80,41 +78,49 @@ import { resolve } from 'path';
     }
   }
   // 输入框change事件
-  const inputChange = async(e:Event) =>{
+  const inputChange = (e:Event) =>{
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     if(!file) return
     state.value = 1
-    let res = await encryptionMd5(file)
-    state.value = 2
-    let fileMd5 = res
-    let resB = await checkFile({md5:fileMd5}).catch(()=>{})
-    // 返回1说明数据库没有
-    if(resB && resB.result === 1){
-      let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-      let requestNumber = 0
-      for (let i = 0; i < sliceNumber; i++) {
-        // 满6个就推迟代码1秒
-        if(requestNumber === 6){
-          await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
-          requestNumber = 0
+    // let res = await encryptionMd5(file)
+    let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
+    worker.postMessage({file})
+    worker.onmessage = async(e) =>{
+      console.log(e.data,'data')
+      let {name,data} = e.data
+      if(name === 'succee'){
+        state.value = 2
+        let fileMd5 = data
+        let resB = await checkFile({md5:fileMd5}).catch(()=>{})
+        // 返回1说明数据库没有
+        if(resB && resB.result === 1){
+          let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+          let requestNumber = 0
+          for (let i = 0; i < sliceNumber; i++) {
+            // 满6个就推迟代码1秒
+            if(requestNumber === 6){
+              await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
+              requestNumber = 0
+            }
+            // 没满就继续请求
+            requestNumber++
+            let sliceFile = file.slice(i*unit,i*unit+unit) 
+            let needObj:AllDatasItem = {
+              file:sliceFile,
+              fileMd5:`${fileMd5}-${i}`,
+              sliceFileSize:sliceFile.size,
+              index:i,
+              fileSize:file.size,
+              fileName:file.name,
+              sliceNumber,
+              progressArr:[],
+              finish:false
+            }
+            allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
+            slicesUpdate(needObj,sliceNumber)
+          }
         }
-        // 没满就继续请求
-        requestNumber++
-        let sliceFile = file.slice(i*unit,i*unit+unit) 
-        let needObj:AllDatasItem = {
-          file:sliceFile,
-          fileMd5:`${fileMd5}-${i}`,
-          sliceFileSize:sliceFile.size,
-          index:i,
-          fileSize:file.size,
-          fileName:file.name,
-          sliceNumber,
-          progressArr:[],
-          finish:false
-        }
-        allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
-        slicesUpdate(needObj,sliceNumber)
       }
     }
   }

@@ -53,7 +53,6 @@ app.post('/update', cors(), (req,res)=>{
 // 根据md5标识合并所有切片
 app.post('/mergeSlice', cors(), (req,res)=>{
     let {folderPath,fileMd5,justMd5,nameSuffix,fileName} = req.body
-    console.log(folderPath,fileMd5,justMd5,nameSuffix,fileName,'我是合并所有切片接口')
     mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
         fs.rmdirSync(folderPath)  // 删除文件夹
         let needObj = { url:endPathUrl, name:fileName, md5:justMd5 }
@@ -92,7 +91,7 @@ function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
                 let needPath = data.filter(item => item.split('-')[1].split('.')[0] === String(i))[0]
                 pathArr.push(path.join(folderPath,needPath)) 
             }
-            console.log(pathArr.length,'pathArr')
+            // console.log(pathArr.length,'pathArr')
             const endPathUrl = path.join(staticPath,`${fileMd5.split('-')[0]}${nameSuffix}`)
             const endWs = fs.createWriteStream(endPathUrl,{flags:'a'})  // 创建可写流,a表示追加内容
             // 将追加添加到文档流封装成一个方法,循环调用
