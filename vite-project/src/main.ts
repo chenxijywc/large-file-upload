@@ -8,4 +8,3 @@ const app = createApp(App)
 app.config.globalProperties.$localForage = localforage
 
 app.mount('#app')
-

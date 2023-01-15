@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="content">
-      <div class="listItem" v-for="(item,index) in taskArr" :key="item.md5">
+      <div class="listItem" v-for="(item,index) in taskArr" :key="item.id">
          <div class="leftBox">
             <div class="leftBox_fileName">
               {{item.name}}
@@ -27,7 +27,7 @@
          <div class="rightBtn">
             <div class="mybtn redBtn" @click="stopUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
             <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
-            <div class="mybtn redBtn" @click="reset(item.md5)">取消</div>
+            <div class="mybtn redBtn" @click="reset(item.id)">取消</div>
          </div>
       </div>
     </div>
@@ -40,10 +40,11 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted,onBeforeUnmount, ref, getCurrentInstance } from 'vue'
+  import { onMounted, ref, getCurrentInstance,toRaw,watch } from 'vue'
   import {update,checkFile,mergeSlice,AllDatasItem} from '@/api/home'
   import SparkMD5 from "spark-md5";
   interface taskArrItem{
+    id:number | string
     md5:string
     name:string
     state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
@@ -53,23 +54,24 @@
     percentage:number  // 进度条
   }
   // 显示到视图层的初始数据:
-  const localForage = getCurrentInstance().proxy.$localForage
+  const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*5  //每个切片的大小定位5m
   let taskArr = ref<Array<taskArrItem>>([])
+  // 监听任务改变
+  watch(() =>  taskArr.value, (newVal,oldVal) => {
+    if(!(newVal.length === 0 && oldVal.length === 0)){
+      console.log('我改变了')
+      setTaskArr()    
+    }
+  },{deep:true})
   //页面一打开就调用:
   onMounted(()=>{
-    // isOnbeforeunload()
-    // getTaskArr()
-  })
-  //组件卸载之前:
-  onBeforeUnmount(()=>{
-    // setTaskArr()
+    getTaskArr()
   })
   // 注册事件:
   // 取消
-  const reset = async(md5:string) =>{
-    taskArr.value = taskArr.value.filter(item => item.md5 !== md5)
-    // await localForage.removeItem('taskArr')
+  const reset = async(id:string | number) =>{
+    taskArr.value = toRaw(taskArr.value).filter(item => item.id !== id)
   }
   // 暂停
   const stopUpdate = (item:taskArrItem) =>{
@@ -97,6 +99,7 @@
     if(!file) return
     target.value = ''
     let inTaskArrItem:taskArrItem = {
+      id:new Date().getTime(),
       md5:'',
       name:file.name,
       state:0,
@@ -214,13 +217,27 @@
   }
   // 获取任务
   const getTaskArr = async() =>{
-      let res = await localForage.getItem('taskArr').catch(()=>{})
-      console.log(res,'res')
-      res ? taskArr.value = res : ''
+      let arr = await localForage.getItem('taskArr').catch(()=>{})
+      if(arr.length === 0){return}
+      for (const item of arr) {
+        item.state === 2 ? item.state = 3 : ''
+      }
+      taskArr.value = arr
   }
   // 存储任务到缓存
   const setTaskArr = async() =>{
-    await localForage.setItem('taskArr',taskArr.value)
+    // localForage这个库的api不兼容Proxy对象,要处理一下
+    const needTaskArr = toRaw(taskArr.value)
+    let allDatasArr = needTaskArr.map(item => item.allDatas)
+    for (const item of allDatasArr) {
+      for (let i = 0; i < item.length; i++) {
+        let newItem = toRaw(item[i])
+        newItem.cancel = undefined
+        item.splice(i,1,newItem)
+      }
+    }
+    console.log(needTaskArr,'needTaskArr')
+    await localForage.setItem('taskArr',needTaskArr)
   }
   // 监听浏览器点击刷新按钮
   const isOnbeforeunload = () =>{
@@ -259,7 +276,7 @@
   .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;}
   .leftBox{flex: 1;margin: 10px 0;display: flex;font-size: 14px;}
   .leftBox_percentage{flex: 1;margin: 0 10px;}
-  .leftBox_fileName{width: 10%;min-width: 0;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;}
+  .leftBox_fileName{width: 12%;min-width: 0;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;}
   .rightBtn{display: flex;width:130px;font-size: 14px;justify-content: center;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}

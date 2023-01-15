@@ -10,7 +10,7 @@ export interface AllDatasItem{
   fileName:string
   sliceNumber:number
   progressArr:Array<number>  // 所有进度数组
-  cancel?:Function
+  cancel?:Function | void
   finish?:boolean
 }
 export interface CheckFileReq{
