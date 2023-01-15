@@ -72,6 +72,7 @@
   }
   // 暂停
   const stopUpdate = (item:taskArrItem) =>{
+    console.log(item.allDatas.length,'还剩下多少片要继续上传的')
     item.state = 3
     for (const itemB of item.allDatas) {
       itemB.cancel ? itemB.cancel('stopRequest') : ''
@@ -93,6 +94,7 @@
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     if(!file) return
+    target.value = ''
     let inTaskArrItem:taskArrItem = {
       md5:'',
       name:file.name,
@@ -114,11 +116,11 @@
         inTaskArrItem.state = 2
         inTaskArrItem.md5 = data
         let fileMd5 = data
-        console.log(taskArr,'taskArr')
         let resB = await checkFile({md5:fileMd5}).catch(()=>{})
         // 返回1说明数据库没有
         if(resB && resB.result === 1){
           let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+          console.log(sliceNumber,'一共多少片')
           let requestNumber = 0
           for (let i = 0; i < sliceNumber; i++) {
             let sliceFile = file.slice(i*unit,i*unit+unit) 
@@ -167,10 +169,10 @@
     AllDatasItemuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
       taskArrItem.finishNumber++
       needObj.finish = true
+      taskArrItem.allDatas = taskArrItem.allDatas.filter(item => item.index !== needObj.index)
       if(taskArrItem.finishNumber === sliceNumber){
         let resB = await mergeSlice(res.data).catch(()=>{})
         if(resB && resB.result === 1){
-          taskArrItem.allDatas = taskArrItem.allDatas.filter(item => !item.finish)
           taskArrItem.percentage = 100
           taskArrItem.state = 4
           console.log(taskArrItem,'所有都完成了---------------------------------')
