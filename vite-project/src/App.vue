@@ -11,7 +11,7 @@
                 <div class="percentageBox" :style="{width: `${item.percentage}%`}">
                 </div>
                 <div class="percentageBox_sapn">
-                  <span>{{Math.ceil(item.percentage)}}%</span>
+                  <span>{{Math.floor(item.percentage)}}%</span>
                 </div>
               </div>
               <div>
@@ -24,9 +24,9 @@
             </div>
          </div>
          <div class="rightBtn">
-            <div class="mybtn redBtn" @click="reset(item.md5)">取消</div>
             <div class="mybtn redBtn" @click="stopUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
             <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
+            <div class="mybtn redBtn" @click="reset(item.md5)">取消</div>
          </div>
       </div>
     </div>
@@ -204,7 +204,7 @@
         // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
         let enPercentage = taskArrItem.percentage + needProgress
-        if(taskArrItem.percentage < enPercentage && taskArrItem.percentage < 100){ 
+        if(taskArrItem.percentage < enPercentage && enPercentage < 100){ 
           taskArrItem.percentage = enPercentage 
         }
       },(cancel)=>{
