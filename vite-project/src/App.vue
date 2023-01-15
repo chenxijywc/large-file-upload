@@ -39,29 +39,36 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted, ref, reactive } from 'vue'
+  import { onMounted,onBeforeUnmount, ref, getCurrentInstance } from 'vue'
   import {update,checkFile,mergeSlice,AllDatasItem} from '@/api/home'
   import SparkMD5 from "spark-md5";
   interface taskArrItem{
     md5:string
     name:string
     state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
-    allDatas:Array<AllDatasItem>  // 所有请求数据
+    allDatas:Array<AllDatasItem>  // 所有请求成功或者请求未成功的请求信息
     finishNumber:number
     errNumber:number
     percentage:number  // 进度条
   }
   // 显示到视图层的初始数据:
+  const localForage = getCurrentInstance().proxy.$localForage
   const unit = 1024*1024*5  //每个切片的大小定位5m
   let taskArr = ref<Array<taskArrItem>>([])
   //页面一打开就调用:
   onMounted(()=>{
-    
+    // isOnbeforeunload()
+    // getTaskArr()
+  })
+  //组件卸载之前:
+  onBeforeUnmount(()=>{
+    // setTaskArr()
   })
   // 注册事件:
-  // 重置,包括进度条
-  const reset = (md5:string) =>{
+  // 取消
+  const reset = async(md5:string) =>{
     taskArr.value = taskArr.value.filter(item => item.md5 !== md5)
+    // await localForage.removeItem('taskArr')
   }
   // 暂停
   const stopUpdate = (item:taskArrItem) =>{
@@ -69,8 +76,6 @@
     for (const itemB of item.allDatas) {
       itemB.cancel ? itemB.cancel('stopRequest') : ''
     }
-    // 将剩下没有完成的请求数据发送到服务器
-    // sendUnfinished({unfinishArr:allDatas})
   }
   // 继续上传
   const goonUpdate = (item:taskArrItem) =>{
@@ -103,7 +108,7 @@
     let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
     worker.postMessage({file})
     worker.onmessage = async(e) =>{
-      console.log(e.data,'data')
+      console.log(e.data,'md5加密完成')
       let {name,data} = e.data
       if(name === 'succee'){
         inTaskArrItem.state = 2
@@ -128,7 +133,7 @@
               progressArr:[],
               finish:false
             }
-            inTaskArrItem.allDatas.push(needObj)  // 所有请求成功或者请求未成功的请求对象
+            inTaskArrItem.allDatas.push(needObj)  
           }
           for (const item of inTaskArrItem.allDatas) {
             // 暂停了就不继续遍历了
@@ -203,6 +208,22 @@
       },(cancel)=>{
         needObj.cancel = cancel   
       })
+  }
+  // 获取任务
+  const getTaskArr = async() =>{
+      let res = await localForage.getItem('taskArr').catch(()=>{})
+      console.log(res,'res')
+      res ? taskArr.value = res : ''
+  }
+  // 存储任务到缓存
+  const setTaskArr = async() =>{
+    await localForage.setItem('taskArr',taskArr.value)
+  }
+  // 监听浏览器点击刷新按钮
+  const isOnbeforeunload = () =>{
+    window.onbeforeunload = function(){
+      setTaskArr()        
+    };
   }
   // md5加密
   const encryptionMd5 = (file:Blob) =>{
