@@ -9,13 +9,7 @@ module.exports = {
     // 新增这里vue3支持
     'plugin:vue/vue3-recommended'
   ],
-  // 这是初始生成的 将其中的内容更改为下面的
-  // parserOptions: {
-  //   ecmaVersion: 'latest',
-  //   sourceType: 'module'
-  // },
-
-  // 新的内容
+  // 规则
   parserOptions: {
     ecmaVersion: 6,
     sourceType: 'module',
@@ -29,11 +23,10 @@ module.exports = {
     'vue'
   ],
   rules: {
-    'eol-last': 2,
+    'eol-last': 0,
     'prefer-const': 2,
     semi: [2, 'never'], // 禁止尾部使用分号“ ; ”
-    'no-var': 'error', // 禁止使用 var
-    indent: ['error', 2], // 缩进2格
+    indent: 0, // 缩进2格
     'no-mixed-spaces-and-tabs': 'error', // 不能空格与tab混用
     quotes: [2, 'single'], // 使用单引号
     'vue/html-closing-bracket-newline': 'off', // 不强制换行

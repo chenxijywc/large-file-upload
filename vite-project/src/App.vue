@@ -248,10 +248,11 @@
     })
   }
 </script>
-<style scoped>
+<style  scoped>
   .page{padding:100px;margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;}
   .content{min-height: 60vh;}
   :deep(.el-progress-bar__innerText){color: black;}
+  /* .listItem{margin-bottom: 22px;display: flex;animation: fadeIn;animation-duration: 1s;} */
   .listItem{margin-bottom: 22px;display: flex;}
   .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin-bottom: 10px;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;position: relative;}
   .percentageBox{height:100%;transition: all 1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
@@ -269,4 +270,8 @@
   .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
   .inputBtn{width: 160px;background-color: #409eff;opacity: 0.8;position: relative;padding: 10px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
+  @keyframes fadeIn{
+  	0% {opacity: 0;}    
+  	100% {opacity: 1;}  
+  }
 </style>
