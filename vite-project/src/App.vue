@@ -23,12 +23,10 @@
               </div>
             </div>
          </div>
-         <!-- {{ item.state }} -->
-         {{ taskArr }}
          <div class="rightBtn">
             <div class="mybtn redBtn" @click="reset(item.md5)">取消</div>
-            <div class="mybtn redBtn" @click="stopUpdate" v-if="[1,2].includes(item.state)">暂停</div>
-            <div class="mybtn blueBtn" @click="goonUpdate" v-if="[3].includes(item.state)">继续</div>
+            <div class="mybtn redBtn" @click="stopUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
+            <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
          </div>
       </div>
     </div>
@@ -48,7 +46,7 @@
     md5:string
     name:string
     state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
-    allDatas:Array<AllDatasItem>
+    allDatas:Array<AllDatasItem>  // 所有请求数据
     finishNumber:number
     errNumber:number
     percentage:number  // 进度条
@@ -65,28 +63,25 @@
   const reset = (md5:string) =>{
     taskArr.value = taskArr.value.filter(item => item.md5 !== md5)
   }
-  // 中止上传
-  const stopUpdate = () =>{
-    // console.log(allDatas,'allDatas')
-    // allDatas.map((item) => { 
-    //   // item.cancel ? item.cancel('stopRequest') : '' 
-    //   if(item.cancel){
-    //     console.log('中止上传')
-    //     item.cancel('stopRequest')
-    //   }
-    // })
+  // 暂停
+  const stopUpdate = (item:taskArrItem) =>{
+    item.state = 3
+    for (const itemB of item.allDatas) {
+      itemB.cancel ? itemB.cancel('stopRequest') : ''
+    }
     // 将剩下没有完成的请求数据发送到服务器
     // sendUnfinished({unfinishArr:allDatas})
   }
   // 继续上传
-  const goonUpdate = () =>{
-    // if(allDatas.length > 0){
-    //   const progressTotal = 100 - percentage.value
-    //   for (const item of allDatas) {
-    //     item.progressArr = []
-    //     // slicesUpdate(item,progressTotal)
-    //   }
-    // }
+  const goonUpdate = (item:taskArrItem) =>{
+    item.state = 2
+    if(item.allDatas.length > 0){
+      const progressTotal = 100 - item.percentage
+      for (const itemB of item.allDatas) {
+        itemB.progressArr = []
+        slicesUpdate(itemB,item,progressTotal)
+      }
+    }
   }
   // 输入框change事件
   const inputChange = (e:Event) =>{
@@ -103,6 +98,7 @@
       percentage:0
     }
     taskArr.value.push(inTaskArrItem)
+    inTaskArrItem = taskArr.value.slice(-1)[0]
     inTaskArrItem.state = 1
     let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
     worker.postMessage({file})
@@ -120,8 +116,6 @@
           let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
           let requestNumber = 0
           for (let i = 0; i < sliceNumber; i++) {
-            // 没满就继续请求
-            requestNumber++
             let sliceFile = file.slice(i*unit,i*unit+unit) 
             let needObj:AllDatasItem = {
               file:sliceFile,
@@ -134,17 +128,22 @@
               progressArr:[],
               finish:false
             }
-            // 满6个就推迟代码1秒
+            inTaskArrItem.allDatas.push(needObj)  // 所有请求成功或者请求未成功的请求对象
+          }
+          for (const item of inTaskArrItem.allDatas) {
+            // 暂停了就不继续遍历了
+            if(inTaskArrItem.state === 3){return}
+            // 没满就继续请求,满6个就推迟代码1秒
+            requestNumber++
             if(requestNumber === 6){
               await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
               requestNumber = 0
             }
-            inTaskArrItem.allDatas.push(needObj)  // 所有请求成功或者请求未成功的请求对象
-            slicesUpdate(needObj,inTaskArrItem)
+            inTaskArrItem.state !== 3 ? slicesUpdate(item,inTaskArrItem) : ''
           }
         }else{
           inTaskArrItem.state = 4
-          stopUpdate()
+          stopUpdate(inTaskArrItem)
         }
       }
     }
@@ -169,19 +168,17 @@
           taskArrItem.allDatas = taskArrItem.allDatas.filter(item => !item.finish)
           taskArrItem.percentage = 100
           taskArrItem.state = 4
-          console.log(resB,'所有都完成了---------------------------------')
-          console.log(taskArr.value,'所有都完成了---------------------------------')
           console.log(taskArrItem,'所有都完成了---------------------------------')
         }
         taskArrItem.finishNumber = 0
       }
     }).catch((err)=>{
-      console.log(err.data,'失败了')
+      console.log(err,'失败了')
       taskArrItem.errNumber++ 
       // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
        if(taskArrItem.errNumber > 3){
           taskArrItem.state = 5
-          stopUpdate()
+          stopUpdate(taskArrItem)
        }
 
     })
@@ -200,9 +197,11 @@
         // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
         let enPercentage = taskArrItem.percentage + needProgress
-        if(taskArrItem.percentage < enPercentage && taskArrItem.percentage < 100){ taskArrItem.percentage = enPercentage }
+        if(taskArrItem.percentage < enPercentage && taskArrItem.percentage < 100){ 
+          taskArrItem.percentage = enPercentage 
+        }
       },(cancel)=>{
-          needObj.cancel = cancel   
+        needObj.cancel = cancel   
       })
   }
   // md5加密
