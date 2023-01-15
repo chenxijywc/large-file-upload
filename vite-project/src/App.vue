@@ -1,99 +1,125 @@
 <template>
   <div class="page">
-    <div class="progressBox">
-      <div v-if="state === 0" style="height:24px;width: 100%;margin-bottom: 10px;"></div>
-      <p v-else-if="state === 1">文件正在处理中...</p>
-      <p v-else-if="state === 2">文件正在上传中...</p>
-      <p v-else-if="state === 3">上传完成</p>
-      <p v-else-if="state === 4">上传失败</p>
-      <el-progress :text-inside="true" :stroke-width="20" :percentage="percentage" status="success" :color="customColors"/>
+    <div class="content">
+      <div class="listItem" v-for="(item,index) in taskArr" :key="item.md5">
+         <div class="leftBox">
+            <div class="leftBox_fileName">
+              {{item.name}}
+            </div>
+            <div class="leftBox_percentage">
+              <div class="percentageBac">
+                <div class="percentageBox" :style="{width: `${item.percentage}%`}">
+                </div>
+                <div class="percentageBox_sapn">
+                  <span>{{Math.ceil(item.percentage)}}%</span>
+                </div>
+              </div>
+              <div>
+                <div v-if="item.state === 0" style="height:24px;width: 100%;"></div>
+                <p v-else-if="item.state === 1">文件正在处理中...</p>
+                <p v-else-if="item.state === 2">文件正在上传中...</p>
+                <p v-else-if="item.state === 4">上传完成</p>
+                <p v-else-if="item.state === 5">上传失败</p>
+              </div>
+            </div>
+         </div>
+         <!-- {{ item.state }} -->
+         {{ taskArr }}
+         <div class="rightBtn">
+            <div class="mybtn redBtn" @click="reset(item.md5)">取消</div>
+            <div class="mybtn redBtn" @click="stopUpdate" v-if="[1,2].includes(item.state)">暂停</div>
+            <div class="mybtn blueBtn" @click="goonUpdate" v-if="[3].includes(item.state)">继续</div>
+         </div>
+      </div>
     </div>
-    <div class="topBox"> 
-      <input type="file" class="isInput" @change="inputChange">
-    </div>
-    <div style="text-align:right;">
-      <el-button type="primary" round @click="reset">重置</el-button>
-      <el-button type="danger" round @click="stopUpdate">中止上传</el-button>
-      <el-button type="primary" round @click="goonUpdate">继续上传</el-button>
+    <div class="bottomBox"> 
+      <div class="inputBtn">
+          选择文件上传
+          <input type="file" class="isInput" @change="inputChange">
+      </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { onMounted, ref, reactive } from 'vue'
   import {update,checkFile,mergeSlice,AllDatasItem} from '@/api/home'
   import SparkMD5 from "spark-md5";
+  interface taskArrItem{
+    md5:string
+    name:string
+    state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
+    allDatas:Array<AllDatasItem>
+    finishNumber:number
+    errNumber:number
+    percentage:number  // 进度条
+  }
   // 显示到视图层的初始数据:
-  const percentage = ref(0)
-  const state = ref(0)
-  let unit = 1024*1024*5  //每个切片的大小定位5m
-  let allDatas:Array<AllDatasItem> = []  // 所有请求的数据
-  let finishNumber = 0  //请求完成的个数
-  let errNumber = 0  // 报错的个数
-  const customColors = [
-    { color: '#f56c6c', percentage: 20 },
-    { color: '#e6a23c', percentage: 40 },
-    { color: '#5cb87a', percentage: 60 },
-    { color: '#1989fa', percentage: 80 },
-    { color: '#6f7ad3', percentage: 100 },
-  ]
+  const unit = 1024*1024*5  //每个切片的大小定位5m
+  let taskArr = ref<Array<taskArrItem>>([])
   //页面一打开就调用:
   onMounted(()=>{
     
   })
   // 注册事件:
   // 重置,包括进度条
-  const reset = () =>{
-    let isInput = document.querySelector('.isInput') as HTMLInputElement
-    isInput.value = ''
-    percentage.value = 0 
-    state.value = 0 
+  const reset = (md5:string) =>{
+    taskArr.value = taskArr.value.filter(item => item.md5 !== md5)
   }
   // 中止上传
   const stopUpdate = () =>{
-    allDatas.map((item) => { item.cancel ? item.cancel('stopRequest') : '' })
-    // 将所有没有完成的请求数据发送到服务器
-    let otherArr = allDatas.filter(item => !item.finish)
-    // sendUnfinished({unfinishArr:otherArr})
+    // console.log(allDatas,'allDatas')
+    // allDatas.map((item) => { 
+    //   // item.cancel ? item.cancel('stopRequest') : '' 
+    //   if(item.cancel){
+    //     console.log('中止上传')
+    //     item.cancel('stopRequest')
+    //   }
+    // })
+    // 将剩下没有完成的请求数据发送到服务器
+    // sendUnfinished({unfinishArr:allDatas})
   }
   // 继续上传
   const goonUpdate = () =>{
-    let otherArr = allDatas.filter(item => !item.finish)
-    if(otherArr.length > 0){
-      const progressTotal = 100 - percentage.value
-      for (const item of otherArr) {
-        item.progressArr = []
-        slicesUpdate(item,otherArr.length,progressTotal)
-      }
-    }
+    // if(allDatas.length > 0){
+    //   const progressTotal = 100 - percentage.value
+    //   for (const item of allDatas) {
+    //     item.progressArr = []
+    //     // slicesUpdate(item,progressTotal)
+    //   }
+    // }
   }
   // 输入框change事件
   const inputChange = (e:Event) =>{
     let target = e.target as HTMLInputElement
     let file = (target.files as FileList)[0]
     if(!file) return
-    console.log(e,'file')
-    console.log(file.path,'file')
-    state.value = 1
-    // let res = await encryptionMd5(file)
+    let inTaskArrItem:taskArrItem = {
+      md5:'',
+      name:file.name,
+      state:0,
+      allDatas:[],  // 所有请求的数据
+      finishNumber:0,  //请求完成的个数
+      errNumber:0,  // 报错的个数
+      percentage:0
+    }
+    taskArr.value.push(inTaskArrItem)
+    inTaskArrItem.state = 1
     let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
     worker.postMessage({file})
     worker.onmessage = async(e) =>{
       console.log(e.data,'data')
       let {name,data} = e.data
       if(name === 'succee'){
-        state.value = 2
+        inTaskArrItem.state = 2
+        inTaskArrItem.md5 = data
         let fileMd5 = data
+        console.log(taskArr,'taskArr')
         let resB = await checkFile({md5:fileMd5}).catch(()=>{})
         // 返回1说明数据库没有
         if(resB && resB.result === 1){
           let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
           let requestNumber = 0
           for (let i = 0; i < sliceNumber; i++) {
-            // 满6个就推迟代码1秒
-            if(requestNumber === 6){
-              await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
-              requestNumber = 0
-            }
             // 没满就继续请求
             requestNumber++
             let sliceFile = file.slice(i*unit,i*unit+unit) 
@@ -108,20 +134,25 @@
               progressArr:[],
               finish:false
             }
-            allDatas.push(needObj)  // 放到一个数组里,预防其中一个请求断了
-            slicesUpdate(needObj,sliceNumber)
+            // 满6个就推迟代码1秒
+            if(requestNumber === 6){
+              await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
+              requestNumber = 0
+            }
+            inTaskArrItem.allDatas.push(needObj)  // 所有请求成功或者请求未成功的请求对象
+            slicesUpdate(needObj,inTaskArrItem)
           }
         }else{
-          state.value = 4
+          inTaskArrItem.state = 4
           stopUpdate()
         }
       }
     }
   }
   // 切片上传
-  const slicesUpdate = (needObj:AllDatasItem,sliceNumber:number,progressTotal = 100) =>{
+  const slicesUpdate = (needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal = 100) =>{
     let fd = new FormData()
-    let {file,fileMd5,sliceFileSize,index,fileSize,fileName} = needObj
+    let {file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber} = needObj
     fd.append('file',file)
     fd.append('fileMd5',fileMd5)
     fd.append('sliceFileSize',String(sliceFileSize))
@@ -129,32 +160,34 @@
     fd.append('fileSize',String(fileSize))
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
-    AllDatasItemuest(fd,needObj,progressTotal).then(async(res)=>{
-      finishNumber++
-      console.log(finishNumber,'finishNumber')
-      console.log(sliceNumber,'sliceNumber')
-      if(finishNumber === sliceNumber){
+    AllDatasItemuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
+      taskArrItem.finishNumber++
+      needObj.finish = true
+      if(taskArrItem.finishNumber === sliceNumber){
         let resB = await mergeSlice(res.data).catch(()=>{})
         if(resB && resB.result === 1){
-          percentage.value = 100
-          state.value = 3
+          taskArrItem.allDatas = taskArrItem.allDatas.filter(item => !item.finish)
+          taskArrItem.percentage = 100
+          taskArrItem.state = 4
           console.log(resB,'所有都完成了---------------------------------')
+          console.log(taskArr.value,'所有都完成了---------------------------------')
+          console.log(taskArrItem,'所有都完成了---------------------------------')
         }
-        finishNumber = 0
+        taskArrItem.finishNumber = 0
       }
     }).catch((err)=>{
       console.log(err.data,'失败了')
-      errNumber++ 
+      taskArrItem.errNumber++ 
       // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
-       if(errNumber > 3){
-          state.value = 4
+       if(taskArrItem.errNumber > 3){
+          taskArrItem.state = 5
           stopUpdate()
        }
 
     })
   }
-  // 将上传文件请求封装成Promise,为了使用Promise.all
-  const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,progressTotal:number) => {
+  // 将上传文件请求封装
+  const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal:number) => {
     return update(fd,(progress)=>{
         let progressArr = needObj.progressArr
         let finishSize = progress.loaded
@@ -166,11 +199,8 @@
         let needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
         // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
-        let enPercentage = percentage.value + needProgress
-        // let enPercentage = Math.round(percentage.value + needProgress)
-        if(percentage.value < enPercentage && percentage.value < 100){ percentage.value = enPercentage }
-        progress.loaded === progress.total ? needObj.finish = true : ''  // 这一片完全加载完就将指定对象设置属性为true
-        // console.log(percentage.value)
+        let enPercentage = taskArrItem.percentage + needProgress
+        if(taskArrItem.percentage < enPercentage && taskArrItem.percentage < 100){ taskArrItem.percentage = enPercentage }
       },(cancel)=>{
           needObj.cancel = cancel   
       })
@@ -196,8 +226,24 @@
   }
 </script>
 <style scoped>
-  .page{padding:80px;max-width:1000px;margin:0 auto;}
-  .topBox{text-align: center;padding: 80px;}
+  .page{padding:100px;margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;}
+  .content{min-height: 60vh;}
   :deep(.el-progress-bar__innerText){color: black;}
-  .progressBox>p{margin-bottom: 10px;}
+  .listItem{margin-bottom: 22px;display: flex;}
+  .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin-bottom: 10px;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;position: relative;}
+  .percentageBox{height:100%;transition: all 1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
+  .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;}
+  .leftBox{flex: 1;margin: 10px 0;display: flex;font-size: 14px;}
+  .leftBox_percentage{flex: 1;margin: 0 10px;}
+  .leftBox_fileName{width: 10%;min-width: 0;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;}
+  .rightBtn{display: flex;width:130px;font-size: 14px;justify-content: center;}
+  .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
+        display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
+  .mybtn:hover{opacity: 1;}
+  .blueBtn{background-color: #409eff;}
+  .redBtn{background-color: #f56c6c;}
+  .bottomBox{text-align: center;}
+  .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
+  .inputBtn{width: 160px;background-color: #409eff;opacity: 0.8;position: relative;padding: 10px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
+  .inputBtn:hover{opacity: 1;}
 </style>

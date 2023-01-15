@@ -51,17 +51,11 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
+button:hover {border-color: #646cff;}
+button:focus,button:focus-visible {outline: 4px auto -webkit-focus-ring-color;}
+.card {padding: 2em;}
 
-.card {
-  padding: 2em;
-}
+*,*:before,*:after {margin: 0;padding: 0;border: 0;font-size: 100%;vertical-align: baseline;box-sizing: border-box;}
 
 @media (prefers-color-scheme: light) {
   :root {
