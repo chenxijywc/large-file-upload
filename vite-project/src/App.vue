@@ -27,7 +27,7 @@
          <div class="rightBtn">
             <div class="mybtn redBtn" @click="stopUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
             <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
-            <div class="mybtn redBtn" @click="reset(item.id)">取消</div>
+            <div class="mybtn redBtn" @click="reset(item)">取消</div>
          </div>
       </div>
     </div>
@@ -54,6 +54,7 @@
     percentage:number  // 进度条
   }
   // 显示到视图层的初始数据:
+  let lastTime:any = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*5  //每个切片的大小定位5m
   let taskArr = ref<Array<taskArrItem>>([])
@@ -61,7 +62,11 @@
   watch(() =>  taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
       console.log('我改变了')
-      setTaskArr()    
+      // 这里要做一下防抖处理,如果多少毫米内频繁的触发,那就只触发最后一次
+      lastTime ? clearTimeout(lastTime) : ''
+      lastTime = setTimeout(()=>{
+        setTaskArr()    
+      },500)
     }
   },{deep:true})
   //页面一打开就调用:
@@ -70,8 +75,9 @@
   })
   // 注册事件:
   // 取消
-  const reset = async(id:string | number) =>{
-    taskArr.value = toRaw(taskArr.value).filter(item => item.id !== id)
+  const reset = async(item:taskArrItem) =>{
+    stopUpdate(item)
+    taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
   }
   // 暂停
   const stopUpdate = (item:taskArrItem) =>{
@@ -218,7 +224,7 @@
   // 获取任务
   const getTaskArr = async() =>{
       let arr = await localForage.getItem('taskArr').catch(()=>{})
-      if(arr.length === 0){return}
+      if(!arr || arr.length === 0){return}
       for (const item of arr) {
         item.state === 2 ? item.state = 3 : ''
       }
@@ -236,8 +242,13 @@
         item.splice(i,1,newItem)
       }
     }
-    console.log(needTaskArr,'needTaskArr')
-    await localForage.setItem('taskArr',needTaskArr)
+    localForage.setItem('taskArr',needTaskArr).then(()=>{
+      console.log('存储成功')
+      console.log(needTaskArr,'needTaskArr')
+    }).catch(()=>{
+      console.log('存储失败')
+      console.log(needTaskArr,'needTaskArr')
+    })
   }
   // 监听浏览器点击刷新按钮
   const isOnbeforeunload = () =>{
