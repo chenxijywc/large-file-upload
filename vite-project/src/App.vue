@@ -51,7 +51,6 @@
   const unit = 1024*1024*3  //每个切片的大小定位3m
   let taskArr = ref<Array<taskArrItem>>([])
   let updateingArr:Array<taskArrItem> = []
-  let requestNumber = 0  // 所有请求的个数
   // 监听任务改变
   watch(() => taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
@@ -82,10 +81,7 @@
     item.state = 2
     if(item.allDatas.length > 0){
       const progressTotal = 100 - item.percentage
-      for (const itemB of item.allDatas) {
-        itemB.progressArr = []
-        slicesUpdate(itemB,item,progressTotal)
-      }
+      slicesUpdate(item,progressTotal)
     }
   }
   // 取消
@@ -167,7 +163,8 @@
   const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
     let needObj = taskArrItem.allDatas.slice(-1)[0]
     const fd = new FormData()
-    const {file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber} = needObj
+    // console.log(needObj,'needObj')
+    const { file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber } = needObj
     fd.append('file',file as File)
     fd.append('fileMd5',fileMd5)
     fd.append('sliceFileSize',String(sliceFileSize))
@@ -186,6 +183,8 @@
           taskArrItem.percentage = 100
           taskArrItem.state = 4
           console.log(taskArrItem,'所有都完成了---------------------------------')
+        }else{
+          pauseUpdate(taskArrItem,false)  // 上传失败
         }
         taskArrItem.finishNumber = 0
       }else{
@@ -198,7 +197,7 @@
         taskArrItem.errNumber++ 
         // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之后上传失败
         if(taskArrItem.errNumber > 3){
-          pauseUpdate(taskArrItem,false)
+          pauseUpdate(taskArrItem,false)  // 上传失败
         }else{
           slicesUpdate(taskArrItem)
         }
