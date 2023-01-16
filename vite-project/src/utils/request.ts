@@ -10,7 +10,7 @@ let myBaseURL = 'http://localhost:3000'
 // 创建axios实例
 const service = axios.create({
     baseURL: myBaseURL, // 请求头
-    timeout: 5000 // 请求超时时间
+    timeout: 15000 // 请求超时时间
   })
 
 // 响应拦截

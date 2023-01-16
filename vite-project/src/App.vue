@@ -1,7 +1,8 @@
 <template>
   <div class="page">
     <div class="content">
-      <div class="listItem" v-for="(item,index) in taskArr" :key="item.id">
+      <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
+      <!-- <div class="listItem" v-for="(item,index) in taskArr" :key="item.id">
          <div class="leftBox">
             <div class="leftBox_fileName">
               {{item.name}}
@@ -29,7 +30,7 @@
             <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
             <div class="mybtn redBtn" @click="reset(item)">取消</div>
          </div>
-      </div>
+      </div> -->
     </div>
     <div class="bottomBox"> 
       <div class="inputBtn">
@@ -40,19 +41,10 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted, ref, getCurrentInstance,toRaw,watch } from 'vue'
-  import {update,checkFile,mergeSlice,AllDatasItem} from '@/api/home'
+  import { onMounted, ref, getCurrentInstance, toRaw, watch } from 'vue'
+  import {update,checkFile,mergeSlice,AllDatasItem,taskArrItem} from '@/api/home'
+  import ListItem from '@/listItem.vue'
   import SparkMD5 from "spark-md5";
-  interface taskArrItem{
-    id:number | string
-    md5:string
-    name:string
-    state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
-    allDatas:Array<AllDatasItem>  // 所有请求成功或者请求未成功的请求信息
-    finishNumber:number
-    errNumber:number
-    percentage:number  // 进度条
-  }
   // 显示到视图层的初始数据:
   let lastTime:any = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
@@ -62,23 +54,18 @@
   watch(() =>  taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
       console.log('我改变了')
-      // 这里要做一下防抖处理,如果200毫秒内频繁的触发就不执行,20毫米后触发最后一次
+      // 防抖处理,如果200毫秒内频繁的触发就不执行,200毫米之后才触发一次
       lastTime ? clearTimeout(lastTime) : ''
       lastTime = setTimeout(()=>{
         setTaskArr()    
       },200)
     }
   },{deep:true})
-  //页面一打开就调用:
+  // 页面一打开就调用:
   onMounted(()=>{
     getTaskArr()
   })
   // 注册事件:
-  // 取消
-  const reset = async(item:taskArrItem) =>{
-    pauseUpdate(item)
-    taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
-  }
   // 暂停
   const pauseUpdate = (item:taskArrItem,elsePause=true) =>{
     // console.log(item.allDatas.length,'还剩下多少片要继续上传的')
@@ -88,7 +75,7 @@
       itemB.cancel ? itemB.cancel('stopRequest') : ''
     }
   }
-  // 继续上传
+  // 继续
   const goonUpdate = (item:taskArrItem) =>{
     item.state = 2
     if(item.allDatas.length > 0){
@@ -98,6 +85,11 @@
         slicesUpdate(itemB,item,progressTotal)
       }
     }
+  }
+  // 取消
+  const reset = async(item:taskArrItem) =>{
+    pauseUpdate(item)
+    taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
   }
   // 输入框change事件
   const inputChange = (e:Event) =>{
