@@ -25,7 +25,7 @@
             </div>
          </div>
          <div class="rightBtn">
-            <div class="mybtn redBtn" @click="stopUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
+            <div class="mybtn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
             <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
             <div class="mybtn redBtn" @click="reset(item)">取消</div>
          </div>
@@ -62,11 +62,11 @@
   watch(() =>  taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
       console.log('我改变了')
-      // 这里要做一下防抖处理,如果多少毫米内频繁的触发,那就只触发最后一次
+      // 这里要做一下防抖处理,如果200毫秒内频繁的触发就不执行,20毫米后触发最后一次
       lastTime ? clearTimeout(lastTime) : ''
       lastTime = setTimeout(()=>{
         setTaskArr()    
-      },500)
+      },200)
     }
   },{deep:true})
   //页面一打开就调用:
@@ -76,13 +76,14 @@
   // 注册事件:
   // 取消
   const reset = async(item:taskArrItem) =>{
-    stopUpdate(item)
+    pauseUpdate(item)
     taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
   }
   // 暂停
-  const stopUpdate = (item:taskArrItem) =>{
-    console.log(item.allDatas.length,'还剩下多少片要继续上传的')
-    item.state = 3
+  const pauseUpdate = (item:taskArrItem,elsePause=true) =>{
+    // console.log(item.allDatas.length,'还剩下多少片要继续上传的')
+    elsePause ? item.state = 3 : item.state = 5  // elsePause为true,就是纯暂停.为false就是上传都失败了
+    item.errNumber = 0
     for (const itemB of item.allDatas) {
       itemB.cancel ? itemB.cancel('stopRequest') : ''
     }
@@ -111,7 +112,7 @@
       state:0,
       allDatas:[],  // 所有请求的数据
       finishNumber:0,  //请求完成的个数
-      errNumber:0,  // 报错的个数
+      errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传失败
       percentage:0
     }
     taskArr.value.push(inTaskArrItem)
@@ -159,8 +160,7 @@
             inTaskArrItem.state !== 3 ? slicesUpdate(item,inTaskArrItem) : ''
           }
         }else{
-          inTaskArrItem.state = 4
-          stopUpdate(inTaskArrItem)
+          pauseUpdate(inTaskArrItem,false)
         }
       }
     }
@@ -177,6 +177,7 @@
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
     AllDatasItemuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
+      taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
       taskArrItem.finishNumber++
       needObj.finish = true
       taskArrItem.allDatas = taskArrItem.allDatas.filter(item => item.index !== needObj.index)
@@ -190,14 +191,17 @@
         taskArrItem.finishNumber = 0
       }
     }).catch((err)=>{
-      console.log(err,'失败了')
-      taskArrItem.errNumber++ 
-      // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
-       if(taskArrItem.errNumber > 3){
-          taskArrItem.state = 5
-          stopUpdate(taskArrItem)
-       }
-
+      if(taskArrItem.state === 5){return}  // 你都已经上传失败了,就什么都不用做了
+      if(!(err.message && err.message === 'stopRequest')){
+        console.log(err.message,'真的请求失败了')
+        taskArrItem.errNumber++ 
+        // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
+        if(taskArrItem.errNumber > 3){
+          pauseUpdate(taskArrItem,false)
+        }else{
+          slicesUpdate(needObj,taskArrItem)
+        }
+      }
     })
   }
   // 将上传文件请求封装
@@ -244,10 +248,8 @@
     }
     localForage.setItem('taskArr',needTaskArr).then(()=>{
       console.log('存储成功')
-      console.log(needTaskArr,'needTaskArr')
     }).catch(()=>{
       console.log('存储失败')
-      console.log(needTaskArr,'needTaskArr')
     })
   }
   // 监听浏览器点击刷新按钮
@@ -282,7 +284,8 @@
   :deep(.el-progress-bar__innerText){color: black;}
   /* .listItem{margin-bottom: 22px;display: flex;animation: fadeIn;animation-duration: 1s;} */
   .listItem{margin-bottom: 22px;display: flex;}
-  .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin-bottom: 10px;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;position: relative;}
+  .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin-bottom: 10px;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
+                  position: relative;overflow: hidden;}
   .percentageBox{height:100%;transition: all 1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
   .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;}
   .leftBox{flex: 1;margin: 10px 0;display: flex;font-size: 14px;}
