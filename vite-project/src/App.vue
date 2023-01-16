@@ -50,6 +50,7 @@
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*5  //每个切片的大小定位5m
   let taskArr = ref<Array<taskArrItem>>([])
+  let updateingArr:Array<taskArrItem> = []
   let requestNumber = 0  // 所有请求的个数
   // 监听任务改变
   watch(() =>  taskArr.value, (newVal,oldVal) => {
@@ -120,41 +121,61 @@
         inTaskArrItem.state = 2
         inTaskArrItem.md5 = data
         let fileMd5 = data
-        let resB = await checkFile({md5:fileMd5}).catch(()=>{})
-        // 返回1说明数据库没有
-        if(resB && resB.result === 1){
-          let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-          console.log(sliceNumber,'一共多少片')
+        let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+        console.log(sliceNumber,'一共多少片')
+        // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
+        let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
+        if(needUpdateingArr.length > 0){
+          let updateTaskObj = needUpdateingArr[0]
           for (let i = 0; i < sliceNumber; i++) {
-            let sliceFile = file.slice(i*unit,i*unit+unit) 
-            let needObj:AllDatasItem = {
-              file:sliceFile,
-              fileMd5:`${fileMd5}-${i}`,
-              sliceFileSize:sliceFile.size,
-              index:i,
-              fileSize:file.size,
-              fileName:file.name,
-              sliceNumber,
-              progressArr:[],
-              finish:false
-            }
-            inTaskArrItem.allDatas.push(needObj)  
+            let inFileMd5 = `${updateTaskObj.md5}-${i}`
+            let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
+            inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
           }
-          for (const item of inTaskArrItem.allDatas) {
-            // 暂停了就不继续遍历了
-            if(inTaskArrItem.state === 3){return}
-            // 没满就继续请求,满6个就推迟代码1秒
-            requestNumber++
-            if(requestNumber === 6){
-              await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
-              requestNumber = 0
+          let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
+          taskArr.value.splice(needIndex,1,updateTaskObj)
+          inTaskArrItem = taskArr.value[needIndex]
+          // console.log(inTaskArrItem,'inTaskArrItem')
+          delaySliceCode(inTaskArrItem,inTaskArrItem.allDatas)
+        }else {
+          let resB = await checkFile({md5:fileMd5}).catch(()=>{})
+          // 返回1说明服务器没有
+          if(resB && resB.result === 1){
+            for (let i = 0; i < sliceNumber; i++) {
+              let sliceFile = file.slice(i*unit,i*unit+unit) 
+              let needObj:AllDatasItem = {
+                file:sliceFile,
+                fileMd5:`${fileMd5}-${i}`,
+                sliceFileSize:sliceFile.size,
+                index:i,
+                fileSize:file.size,
+                fileName:file.name,
+                sliceNumber,
+                progressArr:[],
+                finish:false
+              }
+              inTaskArrItem.allDatas.push(needObj)  
             }
-            inTaskArrItem.state !== 3 ? slicesUpdate(item,inTaskArrItem) : ''
+            delaySliceCode(inTaskArrItem,inTaskArrItem.allDatas)
+          }else{
+            pauseUpdate(inTaskArrItem,false)
           }
-        }else{
-          pauseUpdate(inTaskArrItem,false)
         }
       }
+    }
+  }
+  // 延迟遍历代码执行封装成一个函数
+  const delaySliceCode = async(inTaskArrItem:taskArrItem,allDatas:Array<AllDatasItem>) =>{
+    for (const item of allDatas) {
+      // 暂停了就不继续遍历了
+      if(inTaskArrItem.state === 3){return}
+      // 没满就继续请求,满6个就推迟代码1秒
+      requestNumber++
+      if(requestNumber === 6){
+        await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
+        requestNumber = 0
+      }
+      inTaskArrItem.state !== 3 ? slicesUpdate(item,inTaskArrItem) : ''
     }
   }
   // 切片上传
@@ -217,32 +238,37 @@
         needObj.cancel = cancel   
       })
   }
-  // 获取任务
+  // 获取本地有没要继续上传的任务,状态为2和3都是可以继续上传的,4和5都没必要继续上传了
   const getTaskArr = async() =>{
       let arr = await localForage.getItem('taskArr').catch(()=>{})
       if(!arr || arr.length === 0){return}
-      for (const item of arr) {
-        item.state === 2 ? item.state = 3 : ''
+      for (let i = 0; i < arr.length; i++) {
+        let item = arr[i]
+        item.state === 3 ? item.state = 2 : ''
+        if(item.state === 4 || item.state === 5){
+          arr.splice(i,1)
+          i--
+        }
       }
-      taskArr.value = arr
+      updateingArr = arr
+      console.log(updateingArr,'updateingArr')
   }
   // 存储任务到缓存
   const setTaskArr = async() =>{
-    // localForage这个库的api不兼容Proxy对象,要处理一下
-    const needTaskArr = toRaw(taskArr.value)
-    let allDatasArr = needTaskArr.map(item => item.allDatas)
-    for (const item of allDatasArr) {
-      for (let i = 0; i < item.length; i++) {
-        const newItem = toRaw(item[i])
-        newItem.file = undefined
-        newItem.cancel = undefined
-        item.splice(i,1,newItem)
-      }
-    }
+    // localForage这个库的api不兼容Proxy对象和函数,要处理一下
+    // const needTaskArr = toRaw(taskArr.value)
+    // let allDatasArr = needTaskArr.map(item => item.allDatas)
+    // for (const item of allDatasArr) {
+    //   for (let i = 0; i < item.length; i++) {
+    //     const newItem = toRaw(item[i])
+    //     newItem.file = undefined
+    //     newItem.cancel = undefined
+    //     item.splice(i,1,newItem)
+    //   }
+    // }
+    const needTaskArr = JSON.parse(JSON.stringify(taskArr.value))
     localForage.setItem('taskArr',needTaskArr).then(()=>{
       console.log('存储成功')
-    }).catch(()=>{
-      console.log('存储失败')
     })
   }
   // 监听浏览器点击刷新按钮
