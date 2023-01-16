@@ -135,8 +135,7 @@
           let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
           taskArr.value.splice(needIndex,1,updateTaskObj)
           inTaskArrItem = taskArr.value[needIndex]
-          // console.log(inTaskArrItem,'inTaskArrItem')
-          delaySliceCode(inTaskArrItem,inTaskArrItem.allDatas)
+          slicesUpdate(inTaskArrItem)
         }else {
           let resB = await checkFile({md5:fileMd5}).catch(()=>{})
           // 返回1说明服务器没有
@@ -156,7 +155,7 @@
               }
               inTaskArrItem.allDatas.push(needObj)  
             }
-            delaySliceCode(inTaskArrItem,inTaskArrItem.allDatas)
+            slicesUpdate(inTaskArrItem)
           }else{
             pauseUpdate(inTaskArrItem,false)
           }
@@ -164,22 +163,9 @@
       }
     }
   }
-  // 延迟遍历代码执行封装成一个函数
-  const delaySliceCode = async(inTaskArrItem:taskArrItem,allDatas:Array<AllDatasItem>) =>{
-    for (const item of allDatas) {
-      // 暂停了就不继续遍历了
-      if(inTaskArrItem.state === 3){return}
-      // 没满就继续请求,满6个就推迟代码1秒
-      requestNumber++
-      if(requestNumber === 6){
-        await new Promise(resolve => setTimeout(() => { resolve(null) }, 1000))
-        requestNumber = 0
-      }
-      inTaskArrItem.state !== 3 ? slicesUpdate(item,inTaskArrItem) : ''
-    }
-  }
   // 切片上传
-  const slicesUpdate = (needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal = 100) =>{
+  const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
+    let needObj = taskArrItem.allDatas.slice(-1)[0]
     const fd = new FormData()
     const {file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber} = needObj
     fd.append('file',file as File)
@@ -202,17 +188,19 @@
           console.log(taskArrItem,'所有都完成了---------------------------------')
         }
         taskArrItem.finishNumber = 0
+      }else{
+        slicesUpdate(taskArrItem)  
       }
     }).catch((err)=>{
       if(taskArrItem.state === 5){return}  // 你都已经上传失败了,就什么都不用做了
       if(!(err.message && err.message === 'stopRequest')){
         console.log(err.message,'真的请求失败了')
         taskArrItem.errNumber++ 
-        // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之间上传失败
+        // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之后上传失败
         if(taskArrItem.errNumber > 3){
           pauseUpdate(taskArrItem,false)
         }else{
-          slicesUpdate(needObj,taskArrItem)
+          slicesUpdate(taskArrItem)
         }
       }
     })
