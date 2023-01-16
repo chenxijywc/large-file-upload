@@ -54,12 +54,7 @@
   // 监听任务改变
   watch(() => taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
-      console.log('我改变了')
-      // 防抖处理,如果200毫秒内频繁的触发就不执行,200毫米之后才触发一次
-      lastTime ? clearTimeout(lastTime) : ''
-      lastTime = setTimeout(()=>{
-        setTaskArr()
-      },200)
+      setTaskArr()
     }
   },{deep:true})
   // 页面一打开就调用:
@@ -198,8 +193,6 @@
         // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之后上传失败
         if(taskArrItem.errNumber > 3){
           pauseUpdate(taskArrItem,false)  // 上传失败
-        }else{
-          slicesUpdate(taskArrItem)
         }
       }
     })
@@ -242,16 +235,6 @@
   // 存储任务到缓存
   const setTaskArr = async() =>{
     // localForage这个库的api不兼容Proxy对象和函数,要处理一下
-    // const needTaskArr = toRaw(taskArr.value)
-    // let allDatasArr = needTaskArr.map(item => item.allDatas)
-    // for (const item of allDatasArr) {
-    //   for (let i = 0; i < item.length; i++) {
-    //     const newItem = toRaw(item[i])
-    //     newItem.file = undefined
-    //     newItem.cancel = undefined
-    //     item.splice(i,1,newItem)
-    //   }
-    // }
     const needTaskArr = JSON.parse(JSON.stringify(taskArr.value))
     localForage.setItem('taskArr',needTaskArr).then(()=>{
       console.log('存储成功')
