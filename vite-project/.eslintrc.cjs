@@ -17,17 +17,21 @@ module.exports = {
       modules: true
     },
     requireConfigFile: false,
-    parser: '@babel/eslint-parser'
+    // parser: "@typescript-eslint/parser"
   },
   plugins: [
-    'vue'
+    'vue',
+    "@typescript-eslint"
   ],
   rules: {
+    'no-unused-expressions': 0,
+    'space-before-blocks': 0,
     'eol-last': 0,
     'prefer-const': 2,
     semi: [2, 'never'], // 禁止尾部使用分号“ ; ”
     indent: 0, // 缩进2格
-    'no-mixed-spaces-and-tabs': 'error', // 不能空格与tab混用
+    'no-mixed-spaces-and-tabs': 0, // 不能空格与tab混用
+    'no-tabs': 0,
     quotes: 0, // 使用单引号
     'vue/html-closing-bracket-newline': 'off', // 不强制换行
     'vue/singleline-html-element-content-newline': 'off', // 不强制换行

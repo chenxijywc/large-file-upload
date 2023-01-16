@@ -5,7 +5,7 @@ interface HttpResponse<T=void> {
 }
 
 // 设置请求头
-let myBaseURL = 'http://localhost:3000'
+const myBaseURL = 'http://localhost:3000'
 
 // 创建axios实例
 const service = axios.create({
@@ -22,8 +22,8 @@ service.interceptors.response.use(
   },
   (error) => {
     // Message.error({content: error.msg,duration: 5 * 1000});
-    return Promise.reject(error);
+    return Promise.reject(error)
   }
-);
+)
 
 export default service

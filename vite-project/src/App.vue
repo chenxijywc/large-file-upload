@@ -32,7 +32,7 @@
          </div>
       </div> -->
     </div>
-    <div class="bottomBox"> 
+    <div class="bottomBox">
       <div class="inputBtn">
           选择文件上传
           <input type="file" class="isInput" @change="inputChange">
@@ -42,24 +42,24 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref, getCurrentInstance, toRaw, watch } from 'vue'
-  import {update,checkFile,mergeSlice,AllDatasItem,taskArrItem} from '@/api/home'
+  import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem } from '@/api/home'
   import ListItem from '@/listItem.vue'
-  import SparkMD5 from "spark-md5";
+  import SparkMD5 from "spark-md5"
   // 显示到视图层的初始数据:
   let lastTime:any = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
-  const unit = 1024*1024*5  //每个切片的大小定位5m
+  const unit = 1024*1024*3  //每个切片的大小定位3m
   let taskArr = ref<Array<taskArrItem>>([])
   let updateingArr:Array<taskArrItem> = []
   let requestNumber = 0  // 所有请求的个数
   // 监听任务改变
-  watch(() =>  taskArr.value, (newVal,oldVal) => {
+  watch(() => taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
       console.log('我改变了')
       // 防抖处理,如果200毫秒内频繁的触发就不执行,200毫米之后才触发一次
       lastTime ? clearTimeout(lastTime) : ''
       lastTime = setTimeout(()=>{
-        setTaskArr()    
+        setTaskArr()
       },200)
     }
   },{deep:true})
@@ -180,8 +180,8 @@
   }
   // 切片上传
   const slicesUpdate = (needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal = 100) =>{
-    let fd = new FormData()
-    let {file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber} = needObj
+    const fd = new FormData()
+    const {file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber} = needObj
     fd.append('file',file as File)
     fd.append('fileMd5',fileMd5)
     fd.append('sliceFileSize',String(sliceFileSize))
@@ -195,7 +195,7 @@
       needObj.finish = true
       taskArrItem.allDatas = taskArrItem.allDatas.filter(item => item.index !== needObj.index)
       if(taskArrItem.finishNumber === sliceNumber){
-        let resB = await mergeSlice(res.data).catch(()=>{})
+        const resB = await mergeSlice(res.data).catch(()=>{})
         if(resB && resB.result === 1){
           taskArrItem.percentage = 100
           taskArrItem.state = 4
@@ -228,7 +228,6 @@
         }
         let placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
         let needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
-        // let needProgress = Math.round(progress.loaded / progress.total * 100)  // 已经加载的文件大小/文件的总大小
         progressArr.push(progress.loaded)
         let enPercentage = taskArrItem.percentage + needProgress
         if(taskArrItem.percentage < enPercentage && enPercentage < 100){ 
@@ -239,7 +238,7 @@
       })
   }
   // 获取本地有没要继续上传的任务,状态为2和3都是可以继续上传的,4和5都没必要继续上传了
-  const getTaskArr = async() =>{
+  const getTaskArr = async () =>{
       let arr = await localForage.getItem('taskArr').catch(()=>{})
       if(!arr || arr.length === 0){return}
       for (let i = 0; i < arr.length; i++) {
@@ -321,7 +320,7 @@
   .inputBtn{width: 160px;background-color: #409eff;opacity: 0.8;position: relative;padding: 10px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
   @keyframes fadeIn{
-  	0% {opacity: 0;}    
-  	100% {opacity: 1;}  
+  	0% {opacity: 0;}
+  	100% {opacity: 1;}
   }
 </style>

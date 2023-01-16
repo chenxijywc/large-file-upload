@@ -29,29 +29,29 @@
        </div>
     </div>
 </template>
-    
+
 <script lang="ts" setup>
-import { defineProps,defineEmits } from 'vue'
-import {taskArrItem} from '@/api/home'
+import { defineProps, defineEmits } from 'vue'
+import { taskArrItem } from '@/api/home'
     // 显示到视图层的初始数据:
     const props = defineProps({
         taskArr: Array<taskArrItem>
-    })    
-    const emit = defineEmits(['pauseUpdate','goonUpdate','reset'])
+    })
+    const emit = defineEmits(['pauseUpdate', 'goonUpdate', 'reset'])
     // 暂停
-    const pauseUpdate = (item:taskArrItem,elsePause=true) =>{
-        emit('pauseUpdate',item)
+    const pauseUpdate = (item:taskArrItem, elsePause = true) => {
+        emit('pauseUpdate', item)
     }
     // 继续上传
-    const goonUpdate = (item:taskArrItem) =>{
-        emit('goonUpdate',item)
+    const goonUpdate = (item:taskArrItem) => {
+        emit('goonUpdate', item)
     }
     // 取消
-    const reset = (item:taskArrItem) =>{
-       emit('reset',item)
+    const reset = (item:taskArrItem) => {
+       emit('reset', item)
     }
 </script>
-    
+
 <style scoped>
   .listItem{margin-bottom: 22px;display: flex;}
   .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin-bottom: 10px;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
