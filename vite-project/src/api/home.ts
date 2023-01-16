@@ -12,7 +12,7 @@ export interface taskArrItem{
   percentage:number  // 进度条
 }
 export interface AllDatasItem{
-  file:File | Blob
+  file:File | Blob | void
   fileMd5:string
   sliceFileSize:number
   index:number

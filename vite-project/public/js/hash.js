@@ -3,9 +3,8 @@ self.importScripts("spark-md5.min.js")
 self.onmessage = e =>{
   var file = e.data.file
   //切片
-  //获取切片数量chunknum，文件总大小file.size，切片大小chunkSize
-  var chunkSize = 1024*1024*5  //每个切片的大小定位5m
-  var chunknum = Math.ceil(file.size / chunkSize)
+  var chunkSize = 1024*1024*5  // 每个切片的大小定位5m
+  var chunknum = Math.ceil(file.size / chunkSize)  // 切片数量
   var sparkMD5 = new SparkMD5.ArrayBuffer()
   var str = ''
   //利用文件首尾分片的md5拼接作为整个文件md5

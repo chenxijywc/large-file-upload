@@ -50,6 +50,7 @@
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*5  //每个切片的大小定位5m
   let taskArr = ref<Array<taskArrItem>>([])
+  let requestNumber = 0  // 所有请求的个数
   // 监听任务改变
   watch(() =>  taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
@@ -124,7 +125,6 @@
         if(resB && resB.result === 1){
           let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
           console.log(sliceNumber,'一共多少片')
-          let requestNumber = 0
           for (let i = 0; i < sliceNumber; i++) {
             let sliceFile = file.slice(i*unit,i*unit+unit) 
             let needObj:AllDatasItem = {
@@ -161,7 +161,7 @@
   const slicesUpdate = (needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal = 100) =>{
     let fd = new FormData()
     let {file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber} = needObj
-    fd.append('file',file)
+    fd.append('file',file as File)
     fd.append('fileMd5',fileMd5)
     fd.append('sliceFileSize',String(sliceFileSize))
     fd.append('index',String(index))
@@ -233,7 +233,8 @@
     let allDatasArr = needTaskArr.map(item => item.allDatas)
     for (const item of allDatasArr) {
       for (let i = 0; i < item.length; i++) {
-        let newItem = toRaw(item[i])
+        const newItem = toRaw(item[i])
+        newItem.file = undefined
         newItem.cancel = undefined
         item.splice(i,1,newItem)
       }
