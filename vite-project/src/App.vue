@@ -2,35 +2,6 @@
   <div class="page">
     <div class="content">
       <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
-      <!-- <div class="listItem" v-for="(item,index) in taskArr" :key="item.id">
-         <div class="leftBox">
-            <div class="leftBox_fileName">
-              {{item.name}}
-            </div>
-            <div class="leftBox_percentage">
-              <div class="percentageBac">
-                <div class="percentageBox" :style="{width: `${item.percentage}%`}">
-                </div>
-                <div class="percentageBox_sapn">
-                  <span>{{Math.floor(item.percentage)}}%</span>
-                </div>
-              </div>
-              <div>
-                <div v-if="item.state === 0" style="height:24px;width: 100%;"></div>
-                <p v-else-if="item.state === 1">文件正在处理中...</p>
-                <p v-else-if="item.state === 2">文件正在上传中...</p>
-                <p v-else-if="item.state === 3">暂停中</p>
-                <p v-else-if="item.state === 4">上传完成</p>
-                <p v-else-if="item.state === 5">上传失败</p>
-              </div>
-            </div>
-         </div>
-         <div class="rightBtn">
-            <div class="mybtn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
-            <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
-            <div class="mybtn redBtn" @click="reset(item)">取消</div>
-         </div>
-      </div> -->
     </div>
     <div class="bottomBox">
       <div class="inputBtn">
@@ -83,6 +54,12 @@
   const reset = async(item:taskArrItem) =>{
     pauseUpdate(item)
     taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
+  }
+  // 设置已完成
+  const isFinishTask = (item:taskArrItem) =>{
+    item.percentage = 100
+    item.state = 4
+    console.log('上传完成---------------------------------')
   }
   // 输入框change事件
   const inputChange = (e:Event) =>{
@@ -148,7 +125,8 @@
             }
             slicesUpdate(inTaskArrItem)
           }else{
-            pauseUpdate(inTaskArrItem,false)
+            // 该文件已经上传完成了
+            isFinishTask(inTaskArrItem)
           }
         }
       }
@@ -175,9 +153,7 @@
       if(taskArrItem.finishNumber === sliceNumber){
         const resB = await mergeSlice(res.data).catch(()=>{})
         if(resB && resB.result === 1){
-          taskArrItem.percentage = 100
-          taskArrItem.state = 4
-          console.log(taskArrItem,'所有都完成了---------------------------------')
+          isFinishTask(taskArrItem)
         }else{
           pauseUpdate(taskArrItem,false)  // 上传失败
         }

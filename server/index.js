@@ -35,7 +35,7 @@ app.post('/update', cors(), (req,res)=>{
         let [fileName] = fields.fileName
         let nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) // 文件后缀
         let justMd5 = fileMd5.split('-')[0]
-        let folderPath = path.join(staticPath,justMd5)
+        let folderPath = path.join(staticPath,justMd5)  // 所有切片的文件夹
         let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
         if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }  // static文件夹一定要保证有,否则就会报错
         const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
@@ -66,16 +66,18 @@ app.post('/mergeSlice', cors(), (req,res)=>{
 
 // 查看有没这个文件
 app.post('/checkFile', cors(), (req,res)=>{
-    // let {md5} = req.body
-    // mySQL.query(sql1,[md5],(err1,results,fields) => {
-    //     if (!err1) {
-    //         if(results.length > 0){
-    //             res.send({result:-1,msg:'你之前已经上传过这个文件了'})
-    //         }else{
-                res.send({result:1,msg:'你还没上传过这个文件'})
-    //         }
-    //     }
-    // });
+    let { md5 } = req.body
+    let finishDir = path.join(staticPath,'finish')
+    fs.readdir(finishDir,(err,data)=>{
+        if(!err){
+            let otherArr = data.filter(item => item.slice(0,item.lastIndexOf('.')) === md5)
+            if(otherArr.length > 0){
+                res.send({result:-1,msg:'该文件已经上传完成了'})
+            }else{
+                res.send({result:1,msg:'还没上传过这个文件'})
+            }
+        }
+    }) 
 })
 
 app.get('/', cors(), (req,res)=>{
@@ -91,8 +93,7 @@ function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
                 let needPath = data.filter(item => item.split('-')[1].split('.')[0] === String(i))[0]
                 pathArr.push(path.join(folderPath,needPath)) 
             }
-            // console.log(pathArr.length,'pathArr')
-            const endPathUrl = path.join(staticPath,`${fileMd5.split('-')[0]}${nameSuffix}`)
+            const endPathUrl = path.join(staticPath,'finish',`${fileMd5.split('-')[0]}${nameSuffix}`)  // 合并之后的文件路径
             const endWs = fs.createWriteStream(endPathUrl,{flags:'a'})  // 创建可写流,a表示追加内容
             // 将追加添加到文档流封装成一个方法,循环调用
             const addStream = (pathArr)=>{
