@@ -31,7 +31,8 @@
         <div class="rightBtn">
           <div class="mybtn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
           <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
-          <div class="mybtn redBtn" @click="reset(item)" v-if="[2,3,5].includes(item.state)">取消</div>
+          <div class="mybtn redBtn" @click="reset(item)">取消</div>
+          <!-- <div class="mybtn redBtn" @click="reset(item)" v-if="[2,3,5].includes(item.state)">取消</div> -->
         </div>
       </div>
     </div>
