@@ -70,14 +70,15 @@ import { taskArrItem } from '@/api/home'
           return `${num}M`
         }
       }else{
-        return `${val}KB`
+        let numC = Math.floor(val/1024)
+        return `${numC}KB`
       }
     }
 </script>
 
 <style scoped>
   .listItem{margin-bottom: 22px;display: flex;transition: all 1s;}
-  .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
+  .percentageBac{height:22px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
                   position: relative;overflow: hidden;}
   .percentageBox{height:100%;transition: all .1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
   .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;}

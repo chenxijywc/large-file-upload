@@ -9,13 +9,13 @@
     <div class="bottomBox">
       <div class="inputBtn">
           选择文件上传
-          <input type="file" class="isInput" @change="inputChange">
+          <input type="file" multiple class="isInput" @change="inputChange">
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted, ref, getCurrentInstance, toRaw, watch, computed } from 'vue'
+  import { onMounted, ref, getCurrentInstance, toRaw, watch, computed, nextTick } from 'vue'
   import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem } from '@/api/home'
   import ListItem from '@/listItem.vue'
   import SparkMD5 from "spark-md5"
@@ -23,20 +23,7 @@
   let lastTime:any = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*3  //每个切片的大小定位3m
-  let taskArr = ref<Array<taskArrItem>>([
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {},
-    // {}
-  ])
+  let taskArr = ref<Array<taskArrItem>>([])
   let updateingArr:Array<taskArrItem> = []
   const statistics = computed(()=>{
     let otherArr = taskArr.value.filter(item => item.state === 4)
@@ -84,70 +71,74 @@
   // 输入框change事件
   const inputChange = (e:Event) =>{
     let target = e.target as HTMLInputElement
-    let file = (target.files as FileList)[0]
-    if(!file) return
-    target.value = ''
-    let inTaskArrItem:taskArrItem = {
-      id:new Date().getTime(),
-      md5:'',
-      name:file.name,
-      state:0,
-      fileSize:file.size,
-      allDatas:[],  // 所有请求的数据
-      finishNumber:0,  //请求完成的个数
-      errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传失败
-      percentage:0
-    }
-    taskArr.value.push(inTaskArrItem)
-    inTaskArrItem = taskArr.value.slice(-1)[0]
-    inTaskArrItem.state = 1
-    let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
-    worker.postMessage({file})
-    worker.onmessage = async(e) =>{
-      console.log(e.data,'md5加密完成')
-      let {name,data} = e.data
-      if(name === 'succee'){
-        inTaskArrItem.state = 2
-        inTaskArrItem.md5 = data
-        let fileMd5 = data
-        let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-        console.log(sliceNumber,'一共多少片')
-        // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
-        let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
-        if(needUpdateingArr.length > 0){
-          let updateTaskObj = needUpdateingArr[0]
-          for (let i = 0; i < sliceNumber; i++) {
-            let inFileMd5 = `${updateTaskObj.md5}-${i}`
-            let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
-            inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
-          }
-          let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
-          taskArr.value.splice(needIndex,1,updateTaskObj)
-          inTaskArrItem = taskArr.value[needIndex]
-          slicesUpdate(inTaskArrItem)
-        }else {
-          let resB = await checkFile({md5:fileMd5}).catch(()=>{})
-          // 返回1说明服务器没有
-          if(resB && resB.result === 1){
+    let files = target.files as FileList
+    if(files.length === 0) return
+    for (let h = 0; h < files.length; h++) {
+      const file = files[h]
+      console.log(file,'file')
+      h === files.length-1 ? nextTick(()=>{ target.value = '' }) : ''
+      let inTaskArrItem:taskArrItem = {
+        id:new Date().getTime(),
+        md5:'',
+        name:file.name,
+        state:0,
+        fileSize:file.size,
+        allDatas:[],  // 所有请求的数据
+        finishNumber:0,  //请求完成的个数
+        errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传失败
+        percentage:0
+      }
+      taskArr.value.push(inTaskArrItem)
+      inTaskArrItem = taskArr.value.slice(-1)[0]
+      inTaskArrItem.state = 1
+      let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
+      worker.postMessage({file})
+      worker.onmessage = async(e) =>{
+        console.log(e.data,'md5加密完成')
+        let {name,data} = e.data
+        if(name === 'succee'){
+          inTaskArrItem.state = 2
+          inTaskArrItem.md5 = data
+          let fileMd5 = data
+          let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+          console.log(sliceNumber,'一共多少片')
+          // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
+          let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
+          if(needUpdateingArr.length > 0){
+            let updateTaskObj = needUpdateingArr[0]
             for (let i = 0; i < sliceNumber; i++) {
-              let sliceFile = file.slice(i*unit,i*unit+unit) 
-              let needObj:AllDatasItem = {
-                file:sliceFile,
-                fileMd5:`${fileMd5}-${i}`,
-                sliceFileSize:sliceFile.size,
-                index:i,
-                fileSize:file.size,
-                fileName:file.name,
-                sliceNumber,
-                progressArr:[],
-                finish:false
-              }
-              inTaskArrItem.allDatas.push(needObj)  
+              let inFileMd5 = `${updateTaskObj.md5}-${i}`
+              let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
+              inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
             }
+            let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
+            taskArr.value.splice(needIndex,1,updateTaskObj)
+            inTaskArrItem = taskArr.value[needIndex]
             slicesUpdate(inTaskArrItem)
-          }else{
-            // 该文件已经上传完成了
-            isFinishTask(inTaskArrItem)
+          }else {
+            let resB = await checkFile({md5:fileMd5}).catch(()=>{})
+            // 返回1说明服务器没有
+            if(resB && resB.result === 1){
+              for (let i = 0; i < sliceNumber; i++) {
+                let sliceFile = file.slice(i*unit,i*unit+unit) 
+                let needObj:AllDatasItem = {
+                  file:sliceFile,
+                  fileMd5:`${fileMd5}-${i}`,
+                  sliceFileSize:sliceFile.size,
+                  index:i,
+                  fileSize:file.size,
+                  fileName:file.name,
+                  sliceNumber,
+                  progressArr:[],
+                  finish:false
+                }
+                inTaskArrItem.allDatas.push(needObj)  
+              }
+              slicesUpdate(inTaskArrItem)
+            }else{
+              // 该文件已经上传完成了
+              isFinishTask(inTaskArrItem)
+            }
           }
         }
       }
@@ -265,8 +256,8 @@
 </script>
 <style  scoped>
   .page{margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;position: relative;}
-  .pageTop{height: 100px;padding: 0 60px;display: flex;align-items: center;font-size: 14px;}
-  .content{padding:0 100px 0 100px;overflow-y: auto; height: calc(100vh - 200px);}
+  .pageTop{height: 60px;padding: 0 60px;display: flex;align-items: center;font-size: 14px;}
+  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 160px);}
   :deep(.el-progress-bar__innerText){color: black;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
