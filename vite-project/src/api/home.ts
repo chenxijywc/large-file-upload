@@ -18,6 +18,7 @@ export interface taskArrItem{
   md5:string
   name:string
   state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
+  fileSize:number
   allDatas:Array<AllDatasItem>  // 所有请求成功或者请求未成功的请求信息
   finishNumber:number
   errNumber:number

@@ -1,5 +1,8 @@
 <template>
   <div class="page">
+    <div class="pageTop">
+      正在上传 ({{ statistics }})
+    </div>
     <div class="content">
       <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
     </div>
@@ -12,7 +15,7 @@
   </div>
 </template>
 <script setup lang="ts">
-  import { onMounted, ref, getCurrentInstance, toRaw, watch } from 'vue'
+  import { onMounted, ref, getCurrentInstance, toRaw, watch, computed } from 'vue'
   import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem } from '@/api/home'
   import ListItem from '@/listItem.vue'
   import SparkMD5 from "spark-md5"
@@ -20,8 +23,25 @@
   let lastTime:any = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*3  //每个切片的大小定位3m
-  let taskArr = ref<Array<taskArrItem>>([])
+  let taskArr = ref<Array<taskArrItem>>([
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {},
+    // {}
+  ])
   let updateingArr:Array<taskArrItem> = []
+  const statistics = computed(()=>{
+    let otherArr = taskArr.value.filter(item => item.state === 4)
+    return `${otherArr.length}/${taskArr.value.length}`
+  })
   // 监听任务改变
   watch(() => taskArr.value, (newVal,oldVal) => {
     if(!(newVal.length === 0 && oldVal.length === 0)){
@@ -72,6 +92,7 @@
       md5:'',
       name:file.name,
       state:0,
+      fileSize:file.size,
       allDatas:[],  // 所有请求的数据
       finishNumber:0,  //请求完成的个数
       errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传失败
@@ -243,28 +264,23 @@
   }
 </script>
 <style  scoped>
-  .page{padding:100px;margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;}
-  .content{min-height: 60vh;}
+  .page{margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;position: relative;}
+  .pageTop{height: 100px;padding: 0 60px;display: flex;align-items: center;font-size: 14px;}
+  .content{padding:0 100px 0 100px;overflow-y: auto; height: calc(100vh - 200px);}
   :deep(.el-progress-bar__innerText){color: black;}
-  /* .listItem{margin-bottom: 22px;display: flex;animation: fadeIn;animation-duration: 1s;} */
-  .listItem{margin-bottom: 22px;display: flex;}
-  .percentageBac{height:24px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin-bottom: 10px;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
-                  position: relative;overflow: hidden;}
-  .percentageBox{height:100%;transition: all 1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
-  .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;}
-  .leftBox{flex: 1;margin: 10px 0;display: flex;font-size: 14px;}
-  .leftBox_percentage{flex: 1;margin: 0 10px;}
-  .leftBox_fileName{width: 12%;min-width: 0;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;}
-  .rightBtn{display: flex;width:130px;font-size: 14px;justify-content: center;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
   .mybtn:hover{opacity: 1;}
   .blueBtn{background-color: #409eff;}
   .redBtn{background-color: #f56c6c;}
-  .bottomBox{text-align: center;}
+  .bottomBox{text-align: center;position: absolute;bottom: 0;left: 0;height: 100px;width: 100%;display: flex;align-items: center;}
   .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
   .inputBtn{width: 160px;background-color: #409eff;opacity: 0.8;position: relative;padding: 10px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
+  /* 滚动条 */
+  ::-webkit-scrollbar{width: 6px;height: 6px;}
+  ::-webkit-scrollbar-thumb{background-color: #dddee0;border-radius: 4px;cursor: pointer;}
+  ::-webkit-scrollbar-thumb:hover{background-color: #c7c9cc;}
   @keyframes fadeIn{
   	0% {opacity: 0;}
   	100% {opacity: 1;}
