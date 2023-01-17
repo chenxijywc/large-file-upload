@@ -223,7 +223,7 @@
       for (let i = 0; i < arr.length; i++) {
         let item = arr[i]
         item.state === 3 ? item.state = 2 : ''
-        if(item.state === 4 || item.state === 5){
+        if([1,4,5].includes(item.state)){
           arr.splice(i,1)
           i--
         }
