@@ -1,9 +1,10 @@
 <template>
   <div class="page">
     <div class="pageTop">
-      正在上传 ({{ statistics }})
+      <p>正在上传 ({{ statistics }})</p>
+      <p class="clearBtn" @click="clear">全部取消</p>
     </div>
-    <div class="content">
+    <div class="content" ref="contentRef">
       <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
     </div>
     <div class="bottomBox">
@@ -20,7 +21,7 @@
   import ListItem from '@/listItem.vue'
   import SparkMD5 from "spark-md5"
   // 显示到视图层的初始数据:
-  let lastTime:any = ref()
+  const contentRef = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*3  //每个切片的大小定位3m
   let taskArr = ref<Array<taskArrItem>>([])
@@ -62,6 +63,10 @@
     pauseUpdate(item)
     taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
   }
+  // 全部取消
+  const clear = () =>{
+    taskArr.value = []
+  }
   // 设置已完成
   const isFinishTask = (item:taskArrItem) =>{
     item.percentage = 100
@@ -72,7 +77,6 @@
   const inputChange = (e:Event) =>{
     let target = e.target as HTMLInputElement
     let files = target.files as FileList
-    if(files.length === 0) return
     for (let h = 0; h < files.length; h++) {
       const file = files[h]
       console.log(file,'file')
@@ -93,6 +97,10 @@
       inTaskArrItem.state = 1
       let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
       worker.postMessage({file})
+      if(file.size === 0){
+        pauseUpdate(inTaskArrItem,false)
+        continue
+      }
       worker.onmessage = async(e) =>{
         console.log(e.data,'md5加密完成')
         let {name,data} = e.data
@@ -101,7 +109,6 @@
           inTaskArrItem.md5 = data
           let fileMd5 = data
           let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-          console.log(sliceNumber,'一共多少片')
           // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
           let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
           if(needUpdateingArr.length > 0){
@@ -134,6 +141,7 @@
                 }
                 inTaskArrItem.allDatas.push(needObj)  
               }
+              console.log(inTaskArrItem,'inTaskArrItem')
               slicesUpdate(inTaskArrItem)
             }else{
               // 该文件已经上传完成了
@@ -143,12 +151,15 @@
         }
       }
     }
+    nextTick(()=>{ 
+      contentRef.value.scrollTop = 110 * taskArr.value.length
+    })
   }
   // 切片上传
   const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
+    // console.log(taskArrItem,'taskArrItem')
     let needObj = taskArrItem.allDatas.slice(-1)[0]
     const fd = new FormData()
-    // console.log(needObj,'needObj')
     const { file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber } = needObj
     fd.append('file',file as File)
     fd.append('fileMd5',fileMd5)
@@ -256,22 +267,25 @@
 </script>
 <style  scoped>
   .page{margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;position: relative;}
-  .pageTop{height: 60px;padding: 0 60px;display: flex;align-items: center;font-size: 14px;}
-  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 160px);}
+  .pageTop{height: 50px;padding: 0 50px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;box-shadow: 0 5px 10px rgba(0, 0, 0, .1);background-color: #1c2127;color:#8386be;}
+  .pageTop>p{padding: 12px;}
+  .clearBtn{cursor: pointer;color: #853b3c;}
+  .clearBtn:hover{cursor: pointer;color: #b65658;}
+  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 130px);}
   :deep(.el-progress-bar__innerText){color: black;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
   .mybtn:hover{opacity: 1;}
   .blueBtn{background-color: #409eff;}
   .redBtn{background-color: #f56c6c;}
-  .bottomBox{text-align: center;position: absolute;bottom: 0;left: 0;height: 100px;width: 100%;display: flex;align-items: center;}
+  .bottomBox{text-align: center;position: absolute;bottom: 0;left: 0;height: 80px;width: 100%;display: flex;align-items: center;box-shadow: 0 -5px 10px rgba(0, 0, 0, .1);}
   .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
-  .inputBtn{width: 160px;background-color: #409eff;opacity: 0.8;position: relative;padding: 10px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
+  .inputBtn{width: 200px;background-color: #409eff;opacity: 0.8;position: relative;padding: 8px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
   /* 滚动条 */
   ::-webkit-scrollbar{width: 6px;height: 6px;}
-  ::-webkit-scrollbar-thumb{background-color: #dddee0;border-radius: 4px;cursor: pointer;}
-  ::-webkit-scrollbar-thumb:hover{background-color: #c7c9cc;}
+  ::-webkit-scrollbar-thumb{background-color: #404755;border-radius: 4px;cursor: pointer;}
+  ::-webkit-scrollbar-thumb:hover{background-color: #4d5564;}
   @keyframes fadeIn{
   	0% {opacity: 0;}
   	100% {opacity: 1;}

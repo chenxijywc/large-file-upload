@@ -19,7 +19,7 @@
               </div>
               <div style="margin-left: 4px;">
                 <div v-if="item.state === 0" style="height:24px;width: 100%;"></div>
-                <p v-else-if="item.state === 1">文件正在处理中...</p>
+                <p v-else-if="item.state === 1">文件正在解析中...</p>
                 <p v-else-if="item.state === 2">文件正在上传中...</p>
                 <p v-else-if="item.state === 3">暂停中</p>
                 <p v-else-if="item.state === 4">上传完成</p>
@@ -32,10 +32,10 @@
           <div class="mybtn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
           <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
           <div class="mybtn redBtn" @click="reset(item)">取消</div>
-          <!-- <div class="mybtn redBtn" @click="reset(item)" v-if="[2,3,5].includes(item.state)">取消</div> -->
         </div>
       </div>
     </div>
+    <div style="height: 108px;"></div>
 </template>
 
 <script lang="ts" setup>
@@ -62,26 +62,26 @@ import { taskArrItem } from '@/api/home'
     const fileSize = (val:number) =>{
       let m = 1024 * 1024
       if(val > m){
-        let num = Math.floor(val/m)     
-        let numB = Math.floor(num/1024)     
+        let num = Math.ceil(val/m)     
+        let numB = Math.ceil(num/1024)     
         if(numB > 1){
           return `${numB}G`
         }else{
           return `${num}M`
         }
       }else{
-        let numC = Math.floor(val/1024)
+        let numC = Math.ceil(val/1024)
         return `${numC}KB`
       }
     }
 </script>
 
 <style scoped>
-  .listItem{margin-bottom: 22px;display: flex;transition: all 1s;}
+  .listItem{margin: 0 10px 20px 10px;display: flex;transition: all 1s;}
   .percentageBac{height:22px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
                   position: relative;overflow: hidden;}
   .percentageBox{height:100%;transition: all .1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
-  .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;}
+  .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;color: #e1eae2;}
   .leftBox{flex: 1;margin: 10px 0;font-size: 14px;}
   .leftBox_percentage{flex: 1;margin: 0 10px;}
   .leftBox_fileName{margin: 0 10px;font-weight: bold;font-size: 18px;}

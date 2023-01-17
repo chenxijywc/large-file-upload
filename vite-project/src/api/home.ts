@@ -12,6 +12,7 @@ export interface AllDatasItem{
   progressArr:Array<number>  // 所有进度数组
   cancel?:Function | void
   finish?:boolean
+  // hint?:string  // 失败提示语
 }
 export interface taskArrItem{
   id:number | string
