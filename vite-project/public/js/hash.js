@@ -12,16 +12,16 @@ self.onmessage = e =>{
     var reader = new FileReader()
     var park = file.slice(i * chunkSize, (i + 1) * chunkSize)
     //md5追加计算第一片和最后一片切片
-    if (i === 0) {
+    if (i === 0 && chunknum !== 1) {
       reader.readAsArrayBuffer(park)
       reader.onload = (e) => {
-        sparkMD5.append(e.target.result.slice(0, 1))
+        sparkMD5.append(e.target.result)
       }
     }
     if (i === chunknum - 1) {
       reader.readAsArrayBuffer(park)
       reader.onload = (e) => {
-        sparkMD5.append(e.target.result.slice(0, 1))
+        sparkMD5.append(e.target.result)
         var md = sparkMD5.end()
         self.postMessage({name:"succee",data:md})
         self.close()
