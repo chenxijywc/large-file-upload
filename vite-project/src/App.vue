@@ -2,7 +2,7 @@
   <div class="page">
     <div class="pageTop">
       <p>正在上传 ({{ statistics }})</p>
-      <p class="clearBtn" @click="clear">全部取消</p>
+      <p class="clearBtn" @click="clear" v-if="taskArr.length > 1">全部取消</p>
     </div>
     <div class="content" ref="contentRef">
       <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
