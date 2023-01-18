@@ -47,7 +47,7 @@ import { taskArrItem } from '@/api/home'
     })
     const emit = defineEmits(['pauseUpdate', 'goonUpdate', 'reset'])
     // 暂停
-    const pauseUpdate = (item:taskArrItem, elsePause = true) => {
+    const pauseUpdate = (item:taskArrItem) => {
         emit('pauseUpdate', item)
     }
     // 继续上传

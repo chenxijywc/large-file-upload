@@ -14,7 +14,7 @@ let sql1 = "select * from files where file = ?;"
 let sql2 = "insert into files(file) values(?);"
 let sql3 = "insert into files set ?;"
 
-// 静态文件托管,可能以后用的上
+// 静态文件托管
 let staticPath = path.join(__dirname,'static')
 app.use(express.static(staticPath))
 

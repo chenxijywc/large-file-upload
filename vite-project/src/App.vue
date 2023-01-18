@@ -74,7 +74,7 @@
     console.log('上传完成---------------------------------')
   }
   // 输入框change事件
-  const inputChange = (e:Event) =>{
+  const inputChange = async(e:Event) =>{
     let target = e.target as HTMLInputElement
     let files = target.files as FileList
     for (let h = 0; h < files.length; h++) {
@@ -93,66 +93,67 @@
         percentage:0
       }
       taskArr.value.push(inTaskArrItem)
+      nextTick(()=>{ contentRef.value.scrollTop = (110 + 20) * (taskArr.value.length + 1) })  // 设置滚动条滚到最底部
       inTaskArrItem = taskArr.value.slice(-1)[0]
       inTaskArrItem.state = 1
-      let worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
-      worker.postMessage({file})
       if(file.size === 0){
         pauseUpdate(inTaskArrItem,false)
         continue
       }
-      worker.onmessage = async(e) =>{
-        console.log(e.data,'md5加密完成')
-        let {name,data} = e.data
-        if(name === 'succee'){
-          inTaskArrItem.state = 2
-          inTaskArrItem.md5 = data
-          let fileMd5 = data
-          let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-          // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
-          let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
-          if(needUpdateingArr.length > 0){
-            let updateTaskObj = needUpdateingArr[0]
-            for (let i = 0; i < sliceNumber; i++) {
-              let inFileMd5 = `${updateTaskObj.md5}-${i}`
-              let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
-              inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
+      let fileMd5 = await useWorker(file)
+      inTaskArrItem.state = 2
+      inTaskArrItem.md5 = fileMd5 as string
+      let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+      // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
+      let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
+      if(needUpdateingArr.length > 0){
+        let updateTaskObj = needUpdateingArr[0]
+        for (let i = 0; i < sliceNumber; i++) {
+          let inFileMd5 = `${updateTaskObj.md5}-${i}`
+          let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
+          inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
+        }
+        let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
+        taskArr.value.splice(needIndex,1,updateTaskObj)
+        inTaskArrItem = taskArr.value[needIndex]
+        slicesUpdate(inTaskArrItem)
+      }else {
+        let resB = await checkFile({md5:fileMd5}).catch(()=>{})
+        // 返回1说明服务器没有
+        if(resB && resB.result === 1){
+          for (let i = 0; i < sliceNumber; i++) {
+            let sliceFile = file.slice(i*unit,i*unit+unit) 
+            let needObj:AllDatasItem = {
+              file:sliceFile,
+              fileMd5:`${fileMd5}-${i}`,
+              sliceFileSize:sliceFile.size,
+              index:i,
+              fileSize:file.size,
+              fileName:file.name,
+              sliceNumber,
+              progressArr:[],
+              finish:false
             }
-            let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
-            taskArr.value.splice(needIndex,1,updateTaskObj)
-            inTaskArrItem = taskArr.value[needIndex]
-            slicesUpdate(inTaskArrItem)
-          }else {
-            let resB = await checkFile({md5:fileMd5}).catch(()=>{})
-            // 返回1说明服务器没有
-            if(resB && resB.result === 1){
-              for (let i = 0; i < sliceNumber; i++) {
-                let sliceFile = file.slice(i*unit,i*unit+unit) 
-                let needObj:AllDatasItem = {
-                  file:sliceFile,
-                  fileMd5:`${fileMd5}-${i}`,
-                  sliceFileSize:sliceFile.size,
-                  index:i,
-                  fileSize:file.size,
-                  fileName:file.name,
-                  sliceNumber,
-                  progressArr:[],
-                  finish:false
-                }
-                inTaskArrItem.allDatas.push(needObj)  
-              }
-              console.log(inTaskArrItem,'inTaskArrItem')
-              slicesUpdate(inTaskArrItem)
-            }else{
-              // 该文件已经上传完成了
-              isFinishTask(inTaskArrItem)
-            }
+            inTaskArrItem.allDatas.push(needObj)  
           }
+          // console.log(inTaskArrItem,'inTaskArrItem')
+          slicesUpdate(inTaskArrItem)
+        }else{
+          // 该文件已经上传完成了
+          isFinishTask(inTaskArrItem)
         }
       }
     }
-    nextTick(()=>{ 
-      contentRef.value.scrollTop = 110 * taskArr.value.length
+  }
+  // Promise封装web Worker计算结果返回
+  const useWorker = (file:File) =>{
+    return new Promise((resolve,reject)=>{
+      const worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
+      worker.postMessage({file})
+      worker.onmessage = (e) =>{
+        let {name,data} = e.data
+        name === 'succee' ? resolve(data) : reject(data)
+      }
     })
   }
   // 切片上传
@@ -175,11 +176,7 @@
       taskArrItem.allDatas = taskArrItem.allDatas.filter(item => item.index !== needObj.index)
       if(taskArrItem.finishNumber === sliceNumber){
         const resB = await mergeSlice(res.data).catch(()=>{})
-        if(resB && resB.result === 1){
-          isFinishTask(taskArrItem)
-        }else{
-          pauseUpdate(taskArrItem,false)  // 上传失败
-        }
+        resB && resB.result === 1 ? isFinishTask(taskArrItem) : pauseUpdate(taskArrItem,false)
         taskArrItem.finishNumber = 0
       }else{
         slicesUpdate(taskArrItem)  
@@ -216,14 +213,14 @@
         needObj.cancel = cancel   
       })
   }
-  // 获取本地有没要继续上传的任务,状态为2和3都是可以继续上传的,4和5都没必要继续上传了
+  // 获取本地有没要继续上传的任务,状态为2都是可以继续上传的,1,4和5都没必要继续上传了
   const getTaskArr = async () =>{
       let arr = await localForage.getItem('taskArr').catch(()=>{})
       if(!arr || arr.length === 0){return}
       for (let i = 0; i < arr.length; i++) {
         let item = arr[i]
         item.state === 3 ? item.state = 2 : ''
-        if([1,4,5].includes(item.state)){
+        if(item.state !== 2){
           arr.splice(i,1)
           i--
         }
@@ -235,9 +232,8 @@
   const setTaskArr = async() =>{
     // localForage这个库的api不兼容Proxy对象和函数,要处理一下
     const needTaskArr = JSON.parse(JSON.stringify(taskArr.value))
-    localForage.setItem('taskArr',needTaskArr).then(()=>{
-      console.log('存储成功')
-    })
+    await localForage.setItem('taskArr',needTaskArr)
+    console.log('存储成功')
   }
   // 监听浏览器点击刷新按钮
   const isOnbeforeunload = () =>{
