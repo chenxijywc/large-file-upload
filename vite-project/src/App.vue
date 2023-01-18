@@ -250,20 +250,21 @@
   }
 </script>
 <style  scoped>
-  .page{margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;position: relative;}
-  .pageTop{height: 50px;padding: 0 50px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;box-shadow: 0 5px 10px rgba(0, 0, 0, .1);background-color: #1c2127;color:#8386be;}
+  .page{margin:0 auto;background-color: #28323e;width: 100%;height: 100vh;color:#ffffff;position: relative;}
+  .pageTop{height: 50px;padding: 0 50px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
   .pageTop_right{width: 260px;display: flex;justify-content: space-between;}
   .pageTop>p{padding: 12px;}
   .clearBtn{cursor: pointer;color: #853b3c;}
   .clearBtn:hover{cursor: pointer;color: #b65658;}
-  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 130px);}
+  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 130px);border-radius: 14px;background-color: #303944;border: 1px solid #252f3c;
+            box-shadow: 0 0 10px rgba(0, 0, 0, .3) inset;}
   :deep(.el-progress-bar__innerText){color: black;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
   .mybtn:hover{opacity: 1;}
   .blueBtn{background-color: #409eff;}
   .redBtn{background-color: #f56c6c;}
-  .bottomBox{text-align: center;position: absolute;bottom: 0;left: 0;height: 80px;width: 100%;display: flex;align-items: center;box-shadow: 0 -5px 10px rgba(0, 0, 0, .1);}
+  .bottomBox{text-align: center;position: absolute;bottom: 0;left: 0;height: 80px;width: 100%;display: flex;align-items: center;}
   .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
   .inputBtn{width: 200px;background-color: #409eff;opacity: 0.8;position: relative;padding: 8px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
