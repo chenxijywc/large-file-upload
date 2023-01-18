@@ -22,3 +22,7 @@ selenium-debug.log
 package-lock.json
 yarn.lock
 
+# 不忽略的文件
+server/static/*
+!server/static/cache/.gitignore
+!server/static/finish/.gitignore
