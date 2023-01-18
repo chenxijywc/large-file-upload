@@ -2,7 +2,7 @@
   <div class="page">
     <div class="pageTop">
       <p>正在上传 ({{ statistics }})</p>
-      <div class="pageTop_right">
+      <div class="pageTop_right" :style="{'justify-content': taskArr.length > 1 ? 'space-between' : 'flex-end'}">
         <p class="clearBtn" @click="clear" v-if="taskArr.length > 1">全部取消</p>
         <p class="clearBtn" @click="clickClearDir">清空本地和服务器存储的文件</p>
       </div>
@@ -125,29 +125,34 @@
         inTaskArrItem = taskArr.value[needIndex]
         slicesUpdate(inTaskArrItem)
       }else {
-        let resB = await checkFile({md5:fileMd5}).catch(()=>{})
-        // 返回1说明服务器没有
-        if(resB && resB.result === 1){
-          for (let i = 0; i < sliceNumber; i++) {
-            let sliceFile = file.slice(i*unit,i*unit+unit) 
-            let needObj:AllDatasItem = {
-              file:sliceFile,
-              fileMd5:`${fileMd5}-${i}`,
-              sliceFileSize:sliceFile.size,
-              index:i,
-              fileSize:file.size,
-              fileName:file.name,
-              sliceNumber,
-              progressArr:[],
-              finish:false
+        try{
+          let resB = await checkFile({md5:fileMd5})
+          // 返回1说明服务器没有
+          if(resB.result === 1){
+            for (let i = 0; i < sliceNumber; i++) {
+              let sliceFile = file.slice(i*unit,i*unit+unit) 
+              let needObj:AllDatasItem = {
+                file:sliceFile,
+                fileMd5:`${fileMd5}-${i}`,
+                sliceFileSize:sliceFile.size,
+                index:i,
+                fileSize:file.size,
+                fileName:file.name,
+                sliceNumber,
+                progressArr:[],
+                finish:false
+              }
+              inTaskArrItem.allDatas.push(needObj)  
             }
-            inTaskArrItem.allDatas.push(needObj)  
+            // console.log(inTaskArrItem,'inTaskArrItem')
+            slicesUpdate(inTaskArrItem)
+          }else{
+            // 该文件已经上传完成了
+            isFinishTask(inTaskArrItem)
           }
-          // console.log(inTaskArrItem,'inTaskArrItem')
-          slicesUpdate(inTaskArrItem)
-        }else{
-          // 该文件已经上传完成了
-          isFinishTask(inTaskArrItem)
+        }catch(err){
+          pauseUpdate(inTaskArrItem,false)
+          continue
         }
       }
     }
@@ -252,7 +257,7 @@
 <style  scoped>
   .page{margin:0 auto;background-color: #28323e;width: 100%;height: 100vh;color:#ffffff;position: relative;}
   .pageTop{height: 50px;padding: 0 50px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
-  .pageTop_right{width: 260px;display: flex;justify-content: space-between;}
+  .pageTop_right{width: 260px;display: flex;}
   .pageTop>p{padding: 12px;}
   .clearBtn{cursor: pointer;color: #853b3c;}
   .clearBtn:hover{cursor: pointer;color: #b65658;}
