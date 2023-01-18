@@ -2,7 +2,10 @@
   <div class="page">
     <div class="pageTop">
       <p>正在上传 ({{ statistics }})</p>
-      <p class="clearBtn" @click="clear" v-if="taskArr.length > 1">全部取消</p>
+      <div class="pageTop_right">
+        <p class="clearBtn" @click="clear" v-if="taskArr.length > 1">全部取消</p>
+        <p class="clearBtn" @click="clickClearDir">清空本地和服务器存储的文件</p>
+      </div>
     </div>
     <div class="content" ref="contentRef">
       <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
@@ -17,9 +20,8 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref, getCurrentInstance, toRaw, watch, computed, nextTick } from 'vue'
-  import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem } from '@/api/home'
+  import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem, clearDir } from '@/api/home'
   import ListItem from '@/listItem.vue'
-  import SparkMD5 from "spark-md5"
   // 显示到视图层的初始数据:
   const contentRef = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
@@ -65,6 +67,11 @@
   }
   // 全部取消
   const clear = () =>{
+    taskArr.value = []
+  }
+  // 全部取消
+  const clickClearDir = async () =>{
+    await clearDir()
     taskArr.value = []
   }
   // 设置已完成
@@ -241,29 +248,11 @@
       setTaskArr()        
     };
   }
-  // md5加密
-  const encryptionMd5 = (file:Blob) =>{
-    return new Promise((resolve,reject)=>{
-      let sparkMD52 = new SparkMD5.ArrayBuffer()
-      let reader = new FileReader()
-      reader.readAsArrayBuffer(file)
-      reader.onload = (event:ProgressEvent) => {
-        console.log(event.target,'event.target')
-        let target = event.target as FileReader
-        let str = target.result
-        sparkMD52.append(str)
-        let md = sparkMD52.end() 
-        resolve(md)
-      }
-      reader.onerror = (err) => {
-        reject(err)
-      }
-    })
-  }
 </script>
 <style  scoped>
   .page{margin:0 auto;background-color: #303944;width: 100%;height: 100vh;color:#ffffff;position: relative;}
   .pageTop{height: 50px;padding: 0 50px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;box-shadow: 0 5px 10px rgba(0, 0, 0, .1);background-color: #1c2127;color:#8386be;}
+  .pageTop_right{width: 260px;display: flex;justify-content: space-between;}
   .pageTop>p{padding: 12px;}
   .clearBtn{cursor: pointer;color: #853b3c;}
   .clearBtn:hover{cursor: pointer;color: #b65658;}

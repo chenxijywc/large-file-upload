@@ -57,6 +57,6 @@ export function sendUnfinished (data:sendUnfinishedReq) {
   return service.post('/sendUnfinished', data)
 }
 // 继续上传接口
-// export function goonUpdate(data:goonUpdateReq) {
-//   return service.post('/goonUpdate',data)
-// }
+export function clearDir() {
+  return service.post('/clearDir')
+}

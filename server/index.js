@@ -33,9 +33,12 @@ app.post('/update', cors(), (req,res)=>{
         let file = files.file[0]
         let [fileMd5] = fields.fileMd5
         let [fileName] = fields.fileName
-        let nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) // 文件后缀
-        let justMd5 = fileMd5.split('-')[0]
-        let folderPath = path.join(staticPath,justMd5)  // 所有切片的文件夹
+        // 一些文件居然没后缀的,要处理一下
+        const haveSuffix = ~fileName.lastIndexOf('.')
+        let nameSuffix  // 文件后缀
+        haveSuffix ? nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) : nameSuffix = ''
+        let justMd5 = fileMd5.slice(0,fileMd5.lastIndexOf('-'))
+        let folderPath = path.join(staticPath,'cache',justMd5)  // 所有切片的文件夹
         let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
         if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }  // static文件夹一定要保证有,否则就会报错
         const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
@@ -49,7 +52,6 @@ app.post('/update', cors(), (req,res)=>{
       }
     })  
 })
-
 // 根据md5标识合并所有切片
 app.post('/mergeSlice', cors(), (req,res)=>{
     let {folderPath,fileMd5,justMd5,nameSuffix,fileName} = req.body
@@ -63,7 +65,6 @@ app.post('/mergeSlice', cors(), (req,res)=>{
         // })
     })
 })
-
 // 查看有没这个文件
 app.post('/checkFile', cors(), (req,res)=>{
     let { md5 } = req.body
@@ -79,7 +80,20 @@ app.post('/checkFile', cors(), (req,res)=>{
         }
     }) 
 })
-
+// 清空finish里的所有文件
+app.post('/clearDir', cors(), (req,res)=>{
+    try{
+        let finishDir = path.join(staticPath,'finish')
+        const files = fs.readdirSync(finishDir)
+        for (const file of files) {
+            const filePath = `${finishDir}/${file}`
+            fs.unlinkSync(filePath)
+        }
+        res.send({result:1,msg:'清空成功'})
+    }catch(err){
+        res.send({result:-1,msg:'清空失败'})
+    }
+})
 app.get('/', cors(), (req,res)=>{
     res.send('欢迎来到大文件上传')
 })
@@ -89,6 +103,7 @@ function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
     fs.readdir(folderPath,(err,data)=>{
         if(!err){
             const pathArr = []
+            // console.log(data,'data')
             for (let i = 0; i < data.length; i++) {
                 let needPath = data.filter(item => item.split('-')[1].split('.')[0] === String(i))[0]
                 pathArr.push(path.join(folderPath,needPath)) 
