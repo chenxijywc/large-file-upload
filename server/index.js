@@ -88,11 +88,12 @@ app.post('/clearDir', cors(), (req,res)=>{
         const files = fs.readdirSync(finishDir)
         const filesB = fs.readdirSync(cacheDir)
         for (const file of files) {
-            fs.unlinkSync(`${finishDir}/${file}`)
+            // 注意:git是不能接收空文件夹的,.gitignore文件相当于空文件夹的占位文件夹,不能删它,如果删了它文件夹一空git会主动把你的空文件删掉
+            file !== '.gitignore' ? fs.unlinkSync(`${finishDir}/${file}`) : ''
         }
         for (const file of filesB) {
             // node.js不支持删除有文件的文件夹,这种情况下就只能递归处理了
-            rmdirSync(`${cacheDir}/${file}`)
+            file !== '.gitignore' ? rmdirSync(`${cacheDir}/${file}`) : ''
         }
         res.send({result:1,msg:'清空成功'})
     }catch(err){
