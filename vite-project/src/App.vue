@@ -17,6 +17,11 @@
       </div>
     </div>
   </div>
+  <div class="messageBac">
+      <div class="message">
+          <p>合并成功</p>
+      </div>
+  </div>
 </template>
 <script setup lang="ts">
   import { onMounted, ref, getCurrentInstance, toRaw, watch, computed, nextTick } from 'vue'
@@ -29,7 +34,7 @@
   let taskArr = ref<Array<taskArrItem>>([])
   let updateingArr:Array<taskArrItem> = []
   const statistics = computed(()=>{
-    let otherArr = taskArr.value.filter(item => item.state === 4)
+    let otherArr = taskArr.value.filter(item => item.state !== 4)
     return `${otherArr.length}/${taskArr.value.length}`
   })
   // 监听任务改变
@@ -256,13 +261,13 @@
 </script>
 <style  scoped>
   .page{margin:0 auto;background-color: #28323e;width: 100%;height: 100vh;color:#ffffff;position: relative;}
-  .pageTop{height: 50px;padding: 0 50px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
+  .pageTop{height: 48px;padding: 0 48px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
   .pageTop_right{width: 260px;display: flex;}
   .pageTop>p{padding: 12px;}
   .clearBtn{cursor: pointer;color: #853b3c;}
   .clearBtn:hover{cursor: pointer;color: #b65658;}
-  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 130px);border-radius: 14px;background-color: #303944;border: 1px solid #252f3c;
-            box-shadow: 0 0 10px rgba(0, 0, 0, .3) inset;}
+  .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 128px);border-radius: 14px;background-color: #303944;border: 1px solid #252f3c;
+            box-shadow: 0 0 10px rgba(0, 0, 0, .4) inset;}
   :deep(.el-progress-bar__innerText){color: black;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
@@ -273,6 +278,9 @@
   .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
   .inputBtn{width: 200px;background-color: #409eff;opacity: 0.8;position: relative;padding: 8px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
+  .messageBac{position: fixed;width: 100%;top: 18px;left: 0;display: flex;justify-content: center;}
+  .message{background-color: #c7d1e5;color: #737a88;border: 1px solid #7f97b3;border-radius: 6px;padding: 4px 16px;}
+  /* .message>p{margin: 12px 20px;} */
   /* 滚动条 */
   ::-webkit-scrollbar{width: 6px;height: 6px;}
   ::-webkit-scrollbar-thumb{background-color: #404755;border-radius: 4px;cursor: pointer;}

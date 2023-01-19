@@ -78,7 +78,7 @@ import { taskArrItem } from '@/api/home'
 
 <style scoped>
   .listItem{margin: 0 10px 20px 10px;display: flex;transition: all 1s;}
-  .percentageBac{height:20px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .51) inset;
+  .percentageBac{height:20px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .5) inset;
                   position: relative;overflow: hidden;}
   .percentageBox{height:100%;transition: all .1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
   .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;color: #e1eae2;height: 20px;line-height: 20px;}
