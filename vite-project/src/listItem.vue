@@ -43,7 +43,7 @@ import { defineProps, defineEmits } from 'vue'
 import { taskArrItem } from '@/api/home'
     // 显示到视图层的初始数据:
     const props = defineProps({
-        taskArr: Array<taskArrItem>
+        taskArr:{type:Array<taskArrItem>,default:[]}
     })
     const emit = defineEmits(['pauseUpdate', 'goonUpdate', 'reset'])
     // 暂停
