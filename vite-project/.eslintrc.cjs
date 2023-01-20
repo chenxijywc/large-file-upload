@@ -17,14 +17,30 @@ module.exports = {
       modules: true
     },
     requireConfigFile: false,
-    // parser: "@typescript-eslint/parser"
+    parser: "@typescript-eslint/parser"
   },
   plugins: [
     'vue',
     "@typescript-eslint"
   ],
   rules: {
+    'vue/mustache-interpolation-spacing': 0,
+    'vue/html-self-closing': 0,
+    'vue/html-closing-bracket-spacing': 0,
+    'vue/html-indent': 0,
+    'vue/attributes-order': 0,
+    'vue/v-on-event-hyphenation': 0,
+    'no-multi-spaces': 0,
+    'spaced-comment': 0,
+    'block-spacing': 0,
+    'space-before-function-paren': 0,
+    'arrow-spacing': 0,
+    'keyword-spacing': 0,
+    'comma-spacing': 0,
+    'space-infix-ops': 0,
+    'key-spacing': 0,
     'no-unused-expressions': 0,
+    'object-curly-spacing': 0,
     'space-before-blocks': 0,
     'eol-last': 0,
     'prefer-const': 2,

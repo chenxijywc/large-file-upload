@@ -60,17 +60,17 @@ import { taskArrItem } from '@/api/home'
     }
     // 显示文件大小
     const fileSize = (val:number) =>{
-      let m = 1024 * 1024
+      const m = 1024 * 1024
       if(val > m){
-        let num = Math.ceil(val/m)     
-        let numB = Math.ceil(num/1024)     
+        const num = Math.ceil(val/m)
+        const numB = Math.ceil(num/1024)
         if(numB > 1){
           return `${numB}G`
         }else{
           return `${num}M`
         }
       }else{
-        let numC = Math.ceil(val/1024)
+        const numC = Math.ceil(val/1024)
         return `${numC}KB`
       }
     }

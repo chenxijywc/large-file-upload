@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class="content" ref="contentRef">
-      <ListItem :taskArr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
+      <ListItem :task-arr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
     </div>
     <div class="bottomBox">
       <div class="inputBtn">
@@ -33,10 +33,10 @@
   const contentRef = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*3  //每个切片的大小定位3m
-  let taskArr = ref<Array<taskArrItem>>([])
+  const taskArr = ref<Array<taskArrItem>>([])
   let updateingArr:Array<taskArrItem> = []
   const statistics = computed(()=>{
-    let otherArr = taskArr.value.filter(item => item.state !== 4)
+    const otherArr = taskArr.value.filter(item => item.state !== 4)
     return `${otherArr.length}/${taskArr.value.length}`
   })
   // 监听任务改变
@@ -95,8 +95,8 @@
   }
   // 输入框change事件
   const inputChange = async(e:Event) =>{
-    let target = e.target as HTMLInputElement
-    let files = target.files as FileList
+    const target = e.target as HTMLInputElement
+    const files = target.files as FileList
     for (let h = 0; h < files.length; h++) {
       const file = files[h]
       console.log(file,'file')
@@ -120,32 +120,32 @@
         pauseUpdate(inTaskArrItem,false)
         continue
       }
-      let fileMd5 = await useWorker(file)
+      const fileMd5 = await useWorker(file)
       inTaskArrItem.state = 2
       inTaskArrItem.md5 = fileMd5 as string
-      let sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
+      const sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
       // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
-      let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
+      const needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
       if(needUpdateingArr.length > 0){
-        let updateTaskObj = needUpdateingArr[0]
+        const updateTaskObj = needUpdateingArr[0]
         message(`${updateTaskObj.name} 之前已经上传了部分,现在可以继续上传`)
         for (let i = 0; i < sliceNumber; i++) {
-          let inFileMd5 = `${updateTaskObj.md5}-${i}`
-          let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
+          const inFileMd5 = `${updateTaskObj.md5}-${i}`
+          const inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
           inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
         }
-        let needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
+        const needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
         taskArr.value.splice(needIndex,1,updateTaskObj)
         inTaskArrItem = taskArr.value[needIndex]
         slicesUpdate(inTaskArrItem)
       }else {
         try{
-          let resB = await checkFile({md5:fileMd5})
+          const resB = await checkFile({md5:fileMd5})
           // 返回1说明服务器没有
           if(resB.result === 1){
             for (let i = 0; i < sliceNumber; i++) {
-              let sliceFile = file.slice(i*unit,i*unit+unit) 
-              let needObj:AllDatasItem = {
+              const sliceFile = file.slice(i*unit,i*unit+unit)
+              const needObj:AllDatasItem = {
                 file:sliceFile,
                 fileMd5:`${fileMd5}-${i}`,
                 sliceFileSize:sliceFile.size,
@@ -156,7 +156,7 @@
                 progressArr:[],
                 finish:false
               }
-              inTaskArrItem.allDatas.push(needObj)  
+              inTaskArrItem.allDatas.push(needObj)
             }
             // console.log(inTaskArrItem,'inTaskArrItem')
             slicesUpdate(inTaskArrItem)
@@ -177,7 +177,7 @@
       const worker = new Worker('./js/hash.js')  //复杂的计算,使用web Worker提高性能
       worker.postMessage({file})
       worker.onmessage = (e) =>{
-        let {name,data} = e.data
+        const {name,data} = e.data
         name === 'succee' ? resolve(data) : reject(data)
       }
     })
@@ -185,7 +185,7 @@
   // 切片上传
   const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
     // console.log(taskArrItem,'taskArrItem')
-    let needObj = taskArrItem.allDatas.slice(-1)[0]
+    const needObj = taskArrItem.allDatas.slice(-1)[0]
     const fd = new FormData()
     const { file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber } = needObj
     fd.append('file',file as File)
@@ -205,13 +205,13 @@
         resB && resB.result === 1 ? isFinishTask(taskArrItem) : pauseUpdate(taskArrItem,false)
         taskArrItem.finishNumber = 0
       }else{
-        slicesUpdate(taskArrItem)  
+        slicesUpdate(taskArrItem)
       }
     }).catch((err)=>{
       if(taskArrItem.state === 5){return}  // 你都已经上传失败了,就什么都不用做了
       if(!(err.message && err.message === 'stopRequest')){
         console.log(err.message,'真的请求失败了')
-        taskArrItem.errNumber++ 
+        taskArrItem.errNumber++
         // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之后上传失败
         if(taskArrItem.errNumber > 3){
           pauseUpdate(taskArrItem,false)  // 上传失败
@@ -222,29 +222,29 @@
   // 将上传文件请求封装
   const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal:number) => {
     return update(fd,(progress)=>{
-        let progressArr = needObj.progressArr
+        const progressArr = needObj.progressArr
         let finishSize = progress.loaded
         if(progressArr.length > 0){
-          let endItem = progressArr.slice(-1)[0]
+          const endItem = progressArr.slice(-1)[0]
           finishSize = finishSize - endItem
         }
-        let placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
-        let needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
+        const placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
+        const needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
         progressArr.push(progress.loaded)
-        let enPercentage = taskArrItem.percentage + needProgress
-        if(taskArrItem.percentage < enPercentage && enPercentage < 100){ 
-          taskArrItem.percentage = enPercentage 
+        const enPercentage = taskArrItem.percentage + needProgress
+        if(taskArrItem.percentage < enPercentage && enPercentage < 100){
+          taskArrItem.percentage = enPercentage
         }
       },(cancel)=>{
-        needObj.cancel = cancel   
+        needObj.cancel = cancel
       })
   }
   // 获取本地有没要继续上传的任务,状态为2都是可以继续上传的,1,4和5都没必要继续上传了
   const getTaskArr = async () =>{
-      let arr = await localForage.getItem('taskArr').catch(()=>{})
+    const arr = await localForage.getItem('taskArr').catch(()=>{})
       if(!arr || arr.length === 0){return}
       for (let i = 0; i < arr.length; i++) {
-        let item = arr[i]
+        const item = arr[i]
         item.state === 3 ? item.state = 2 : ''
         if(item.state !== 2){
           arr.splice(i,1)
@@ -263,9 +263,9 @@
   }
   // 消息提示
   const message = (msg:string,duration=3000) =>{
-    let messageList = document.querySelector('.messageList') as Element
+    const messageList = document.querySelector('.messageList') as Element
     messageList.innerHTML = ''
-    let div = document.createElement('div')
+    const div = document.createElement('div')
     div.className = 'messageBac'
     div.innerHTML = `<div class="message">
                         <p>${msg}</p>
@@ -276,13 +276,7 @@
       setTimeout(() => {
         div.classList.toggle('messageShow')
       }, duration)
-    }, 0);
-  }
-  // 监听浏览器点击刷新按钮
-  const isOnbeforeunload = () =>{
-    window.onbeforeunload = function(){
-      setTaskArr()        
-    };
+    }, 0)
   }
 </script>
 <style scoped>
