@@ -17,10 +17,12 @@
       </div>
     </div>
   </div>
-  <div class="messageBac">
+  <div class="messageList">
+    <!-- <div class="messageBac">
       <div class="message">
           <p>合并成功</p>
       </div>
+    </div> -->
   </div>
 </template>
 <script setup lang="ts">
@@ -69,15 +71,21 @@
   const reset = async(item:taskArrItem) =>{
     pauseUpdate(item)
     taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
+    updateingArr = updateingArr.filter(itemB => itemB.id !== item.id)
   }
   // 全部取消
   const clear = () =>{
+    const allId = toRaw(taskArr.value).map(item => item.id)
+    updateingArr = updateingArr.filter(item => !allId.includes(item.id))
     taskArr.value = []
   }
-  // 全部取消
+  // 清空
   const clickClearDir = async () =>{
-    await clearDir()
-    taskArr.value = []
+    const res = await clearDir()
+    if(res.result === 1){
+      taskArr.value = []
+      message('清空成功')
+    }
   }
   // 设置已完成
   const isFinishTask = (item:taskArrItem) =>{
@@ -120,6 +128,7 @@
       let needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
       if(needUpdateingArr.length > 0){
         let updateTaskObj = needUpdateingArr[0]
+        message(`${updateTaskObj.name} 之前已经上传了部分,现在可以继续上传`)
         for (let i = 0; i < sliceNumber; i++) {
           let inFileMd5 = `${updateTaskObj.md5}-${i}`
           let inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
@@ -252,6 +261,23 @@
     await localForage.setItem('taskArr',needTaskArr)
     console.log('存储成功')
   }
+  // 消息提示
+  const message = (msg:string,duration=3000) =>{
+    let messageList = document.querySelector('.messageList') as Element
+    messageList.innerHTML = ''
+    let div = document.createElement('div')
+    div.className = 'messageBac'
+    div.innerHTML = `<div class="message">
+                        <p>${msg}</p>
+                    </div>`
+    messageList.appendChild(div)
+    setTimeout(() => {
+      div.classList.toggle('messageShow')
+      setTimeout(() => {
+        div.classList.toggle('messageShow')
+      }, duration)
+    }, 0);
+  }
   // 监听浏览器点击刷新按钮
   const isOnbeforeunload = () =>{
     window.onbeforeunload = function(){
@@ -259,12 +285,12 @@
     };
   }
 </script>
-<style  scoped>
+<style scoped>
   .page{margin:0 auto;background-color: #28323e;width: 100%;height: 100vh;color:#ffffff;position: relative;}
   .pageTop{height: 48px;padding: 0 48px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
   .pageTop_right{width: 260px;display: flex;}
   .pageTop>p{padding: 12px;}
-  .clearBtn{cursor: pointer;color: #853b3c;}
+  .clearBtn{cursor: pointer;color: #853b3c;user-select: none;}
   .clearBtn:hover{cursor: pointer;color: #b65658;}
   .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 128px);border-radius: 14px;background-color: #303944;border: 1px solid #252f3c;
             box-shadow: 0 0 10px rgba(0, 0, 0, .4) inset;}
@@ -278,9 +304,9 @@
   .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
   .inputBtn{width: 200px;background-color: #409eff;opacity: 0.8;position: relative;padding: 8px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
   .inputBtn:hover{opacity: 1;}
-  .messageBac{position: fixed;width: 100%;top: 18px;left: 0;display: flex;justify-content: center;}
-  .message{background-color: #c7d1e5;color: #737a88;border: 1px solid #7f97b3;border-radius: 6px;padding: 4px 16px;}
-  /* .message>p{margin: 12px 20px;} */
+  :deep(.messageBac){position: fixed;width: 100%;top:0;left: 0;display: flex;justify-content: center;pointer-events: none;transition: all .3s;transform: translateY(-34px);opacity: 0;}
+  :deep(.messageShow){transform: translateY(20px);opacity: 1;}
+  :deep(.message){background-color: #c7d1e5;color: #737a88;border-radius: 8px;padding: 4px 16px;}
   /* 滚动条 */
   ::-webkit-scrollbar{width: 6px;height: 6px;}
   ::-webkit-scrollbar-thumb{background-color: #404755;border-radius: 4px;cursor: pointer;}
