@@ -287,7 +287,7 @@
   .clearBtn{cursor: pointer;color: #853b3c;user-select: none;}
   .clearBtn:hover{cursor: pointer;color: #b65658;}
   .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 128px);border-radius: 14px;background-color: #303944;border: 1px solid #252f3c;
-            box-shadow: 0 0 10px rgba(0, 0, 0, .4) inset;}
+            box-shadow: 0 0 10px rgba(0, 0, 0, .5) inset;}
   :deep(.el-progress-bar__innerText){color: black;}
   .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
