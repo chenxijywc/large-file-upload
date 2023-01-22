@@ -212,7 +212,7 @@
       if(!(err.message && err.message === 'stopRequest')){
         console.log(err.message,'真的请求失败了')
         taskArrItem.errNumber++
-        // 如果其中一个失败就就将那一切片再次发送请求了,超过3次之后上传失败
+        // 超过3次之后上传失败
         if(taskArrItem.errNumber > 3){
           pauseUpdate(taskArrItem,false)  // 上传失败
         }
