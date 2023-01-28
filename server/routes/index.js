@@ -1,32 +1,18 @@
 const express = require('express')
-const bodyParser = require('body-parser')
-const os = require('os')
+const router = express.Router()
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
-const mySQL = require('./mySQL')
+// const mySQL = require('./mySQL')
+let staticPath = path.join(__dirname,'..','static')
 const multiparty = require("multiparty")
-
-//创建wab 服务器
-const app = express()
 
 let sql1 = "select * from files where file = ?;"
 let sql2 = "insert into files(file) values(?);"
 let sql3 = "insert into files set ?;"
 
-// 静态文件托管
-let staticPath = path.join(__dirname,'static')
-app.use(express.static(staticPath))
-
-// 解析 application/json
-app.use(bodyParser.json()); 
-// 解析 application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }));
-
-app.use(cors())
-
 // 上传
-app.post('/update', cors(), (req,res)=>{
+router.post('/update', cors(), (req,res)=>{
     const multipart = new multiparty.Form();
     multipart.parse(req, async (err, fields, files) => {
       if (!err) {
@@ -53,7 +39,7 @@ app.post('/update', cors(), (req,res)=>{
     })  
 })
 // 根据md5标识合并所有切片
-app.post('/mergeSlice', cors(), (req,res)=>{
+router.post('/mergeSlice', cors(), (req,res)=>{
     let {folderPath,fileMd5,justMd5,nameSuffix,fileName} = req.body
     mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
         fs.rmdirSync(folderPath)  // 删除文件夹
@@ -66,7 +52,7 @@ app.post('/mergeSlice', cors(), (req,res)=>{
     })
 })
 // 查看有没这个文件
-app.post('/checkFile', cors(), (req,res)=>{
+router.post('/checkFile', cors(), (req,res)=>{
     let { md5 } = req.body
     let finishDir = path.join(staticPath,'finish')
     fs.readdir(finishDir,(err,data)=>{
@@ -81,7 +67,7 @@ app.post('/checkFile', cors(), (req,res)=>{
     }) 
 })
 // 清空finish里的所有文件
-app.post('/clearDir', cors(), (req,res)=>{
+router.post('/clearDir', cors(), (req,res)=>{
     try{
         let finishDir = path.join(staticPath,'finish')
         let cacheDir = path.join(staticPath,'cache')
@@ -99,9 +85,6 @@ app.post('/clearDir', cors(), (req,res)=>{
     }catch(err){
         res.send({result:-1,msg:'清空失败'})
     }
-})
-app.get('/', cors(), (req,res)=>{
-    res.send('欢迎来到大文件上传')
 })
 
 // 合并分片
@@ -134,7 +117,7 @@ function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
     }) 
 }
 // 删除目录和子目录
-var rmdirSync = (function(){
+function rmdirSync(){
     function iterator(url,dirs){
         var stat = fs.statSync(url);
         if(stat.isDirectory()){
@@ -164,21 +147,10 @@ var rmdirSync = (function(){
             e.code === "ENOENT" ? cb() : cb(e);
         }
     }
-})();
-// 获取ip地址
-function getIPAdress() {
-    var interfaces = os.networkInterfaces();
-    for (var devName in interfaces) {
-        var iface = interfaces[devName];
-        for (var i = 0; i < iface.length; i++) {
-            var alias = iface[i];
-            if (alias.family === 'IPv4' && !alias.internal) {
-                return alias.address;
-            }
-        }
-    }
-  }
+}
 
-  app.listen(3000, () => {
-    console.log(`http://${getIPAdress()}:3000`,'启动成功')
-  })
+router.get('/', cors(), (req,res)=>{
+    res.send('欢迎来到大文件上传')
+})
+
+module.exports = router
