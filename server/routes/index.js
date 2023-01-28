@@ -117,7 +117,7 @@ function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
     }) 
 }
 // 删除目录和子目录
-function rmdirSync(){
+const rmdirSync = (function(){
     function iterator(url,dirs){
         var stat = fs.statSync(url);
         if(stat.isDirectory()){
@@ -147,7 +147,7 @@ function rmdirSync(){
             e.code === "ENOENT" ? cb() : cb(e);
         }
     }
-}
+})()
 
 router.get('/', cors(), (req,res)=>{
     res.send('欢迎来到大文件上传')

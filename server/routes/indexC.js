@@ -54,14 +54,16 @@ router.post('/mergeSlice', cors(), (req,res)=>{
     setJs('/mergeSlice',func,res,{reqBody:req.body,staticPath})
     function func({reqBody,staticPath}){
         let {folderPath,fileMd5,justMd5,nameSuffix,fileName} = reqBody
+        console.log(reqBody,'reqBody')
         mergeChunks(folderPath,fileMd5,nameSuffix,(endPathUrl)=>{
-            fs.rmdirSync(folderPath)  // 删除文件夹
-            let needObj = { url:endPathUrl, name:fileName, md5:justMd5 }
-            process.send({result:1,msg:'合并完成'})
-            // 放到数据库,响应客户端所有接收完成
-            // mySQL.query(sql3,needObj,(err2) => {
-            //     !err2 ? process.send({result:1,msg:'所有接收完成'}) : ''
-            // })
+            console.log('合并完成')
+            // fs.rmdirSync(folderPath)  // 删除文件夹
+            // let needObj = { url:endPathUrl, name:fileName, md5:justMd5 }
+            // process.send({result:1,msg:'合并完成'})
+            // // 放到数据库,响应客户端所有接收完成
+            // // mySQL.query(sql3,needObj,(err2) => {
+            // //     !err2 ? process.send({result:1,msg:'所有接收完成'}) : ''
+            // // })
         })
         // 合并分片
         function mergeChunks(folderPath,fileMd5,nameSuffix,cb){
@@ -130,40 +132,39 @@ router.post('/clearDir', cors(), (req,res)=>{
     }catch(err){
         res.send({result:-1,msg:'清空失败'})
     }
-})
-
-// 删除目录和子目录
-function rmdirSync(){
-    function iterator(url,dirs){
-        var stat = fs.statSync(url);
-        if(stat.isDirectory()){
-            dirs.unshift(url);  //收集目录
-            inner(url,dirs);
-        }else if(stat.isFile()){
-            fs.unlinkSync(url);  //直接删除文件
-        }
-    }
-    function inner(path,dirs){
-        var arr = fs.readdirSync(path);
-        for(var i = 0, el ; el = arr[i++];){
-            iterator(path+"/"+el,dirs);
-        }
-    }
-    return function(dir,cb){
-        cb = cb || function(){};
-        var dirs = [];
-        try{
-            iterator(dir,dirs);
-            for(var i = 0, el ; el = dirs[i++];){
-                fs.rmdirSync(el);  //一次性删除所有收集到的目录
+    // 删除目录和子目录
+    const rmdirSync = (function(){
+        function iterator(url,dirs){
+            var stat = fs.statSync(url);
+            if(stat.isDirectory()){
+                dirs.unshift(url);  //收集目录
+                inner(url,dirs);
+            }else if(stat.isFile()){
+                fs.unlinkSync(url);  //直接删除文件
             }
-            cb()
-        }catch(e){
-            //如果文件或目录本来就不存在，fs.statSync会报错，不过我们还是当成没有异常发生
-            e.code === "ENOENT" ? cb() : cb(e);
         }
-    }
-}
+        function inner(path,dirs){
+            var arr = fs.readdirSync(path);
+            for(var i = 0, el ; el = arr[i++];){
+                iterator(path+"/"+el,dirs);
+            }
+        }
+        return function(dir,cb){
+            cb = cb || function(){};
+            var dirs = [];
+            try{
+                iterator(dir,dirs);
+                for(var i = 0, el ; el = dirs[i++];){
+                    fs.rmdirSync(el);  //一次性删除所有收集到的目录
+                }
+                cb()
+            }catch(e){
+                //如果文件或目录本来就不存在，fs.statSync会报错，不过我们还是当成没有异常发生
+                e.code === "ENOENT" ? cb() : cb(e);
+            }
+        }
+    })()
+})
 
 // 设置和创建异步js文件
 function setJs(myPath,func,res,data){

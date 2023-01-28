@@ -26,3 +26,5 @@ yarn.lock
 server/static/*
 !server/static/cache/.gitignore
 !server/static/finish/.gitignore
+server/api/*
+!server/api/.gitignore
