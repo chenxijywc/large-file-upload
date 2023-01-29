@@ -29,7 +29,6 @@
   import { onMounted, ref, getCurrentInstance, toRaw, watch, computed, nextTick } from 'vue'
   import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem, clearDir } from '@/api/home'
   import ListItem from '@/listItem.vue'
-  import JSZip from 'jszip'
   // 显示到视图层的初始数据:
   const contentRef = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
@@ -85,6 +84,8 @@
     const res = await clearDir()
     if(res.result === 1){
       taskArr.value = []
+      updateingArr = []
+      localForage.clear()
       message('清空成功')
     }
   }
@@ -127,9 +128,25 @@
       inTaskArrItem.state = 2
       inTaskArrItem.md5 = fileMd5 as string
       const sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
-      // 先查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了
-      const needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5)
-      if(needUpdateingArr.length > 0){
+      // 先看是不是有同一个文件在上传中或者在那暂停着
+      // 再查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了,state为2是上传中,3是暂停中
+      const needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5 && item.state === 2)
+      const theSameMd5Arr = toRaw(taskArr.value).filter(item => item.md5 === fileMd5)
+      const needDelete = theSameMd5Arr.pop()
+      if(theSameMd5Arr.length > 0){
+        const needIndex = taskArr.value.findIndex((item) => item.id === needDelete.id)
+        const needIndexB = taskArr.value.findIndex((item) => item.id === theSameMd5Arr[0].id)
+        if(theSameMd5Arr[0].state === 2){
+          message(`${theSameMd5Arr[0].name} 已经正在上传中了`)
+          taskArr.value.splice(needIndex,1)
+        }else{
+          message(`${needDelete.name} 之前已经上传了部分,现在可以继续上传`)
+          taskArr.value.splice(needIndex,1)
+          taskArr.value[needIndexB].state = 2
+          inTaskArrItem = taskArr.value[needIndexB]
+          slicesUpdate(inTaskArrItem)
+        }
+      }else if(needUpdateingArr.length > 0){
         const updateTaskObj = needUpdateingArr[0]
         message(`${updateTaskObj.name} 之前已经上传了部分,现在可以继续上传`)
         for (let i = 0; i < sliceNumber; i++) {
