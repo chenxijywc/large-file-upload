@@ -30,6 +30,7 @@ module.exports = {
     'vue/html-indent': 0,
     'vue/attributes-order': 0,
     'vue/v-on-event-hyphenation': 0,
+    'object-curly-newline': 0,
     'no-multi-spaces': 0,
     'spaced-comment': 0,
     'block-spacing': 0,

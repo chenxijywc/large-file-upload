@@ -29,6 +29,7 @@
   import { onMounted, ref, getCurrentInstance, toRaw, watch, computed, nextTick } from 'vue'
   import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem, clearDir } from '@/api/home'
   import ListItem from '@/listItem.vue'
+  import JSZip from 'jszip'
   // 显示到视图层的初始数据:
   const contentRef = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
@@ -121,6 +122,8 @@
         continue
       }
       const fileMd5 = await useWorker(file)
+      // const fileZip = await zipWorker(file,fileMd5 as string)
+      // console.log(fileZip,'压缩完成')
       inTaskArrItem.state = 2
       inTaskArrItem.md5 = fileMd5 as string
       const sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
@@ -277,6 +280,17 @@
         div.classList.toggle('messageShow')
       }, duration)
     }, 0)
+  }
+  // 压缩文件
+  const zipWorker = (file:File,name:string) =>{
+    return new Promise((resolve,reject)=>{
+      const worker = new Worker('./js/zip.js')  //复杂的计算,使用web Worker提高性能
+      worker.postMessage({file,name})
+      worker.onmessage = (e) =>{
+        const {name,data} = e.data
+        name === 'succee' ? resolve(data) : reject(data)
+      }
+    })
   }
 </script>
 <style scoped>
