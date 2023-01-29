@@ -35,11 +35,11 @@ router.post('/update', cors(), (req,res)=>{
                 }
             })
           }else{
-            res.send({result:-1,msg:'上传失败',data:err})
+            res.send({result:-1,msg:'单片上传失败',data:err})
           }
         })  
     }catch(errB){
-        res.send({result:-1,msg:'上传失败',data:errB})
+        res.send({result:-1,msg:'单片上传失败',data:errB})
     }
 })
 // 根据md5标识合并所有切片
