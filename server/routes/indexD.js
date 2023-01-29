@@ -13,34 +13,30 @@ let sql3 = "insert into files set ?;"
 
 // 上传
 router.post('/update', cors(), (req,res)=>{
-    try{
-        let multipart = new multiparty.Form();
-        multipart.parse(req, async (err, fields, files) => {
-          if (!err) {
-            let file = files.file[0]
-            let [fileMd5] = fields.fileMd5
-            let [fileName] = fields.fileName
-            // 一些文件居然没后缀的,要处理一下
-            const haveSuffix = ~fileName.lastIndexOf('.')
-            let nameSuffix  // 文件后缀
-            haveSuffix ? nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) : nameSuffix = ''
-            let justMd5 = fileMd5.slice(0,fileMd5.lastIndexOf('-'))
-            let folderPath = path.join(staticPath,'cache',justMd5)  // 所有切片的文件夹
-            let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
-            if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }  // static文件夹一定要保证有,否则就会报错
-            const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
-            fs.writeFile(dirPath,buffer,(err)=>{
-                if(!err){
-                    res.send({result:1,msg:'单片上传完成',data:{folderPath,fileMd5,justMd5,nameSuffix,fileName}})
-                }
-            })
-          }else{
-            res.send({result:-1,msg:'上传失败',data:err})
-          }
-        })  
-    }catch(errB){
-        res.send({result:-1,msg:'上传失败',data:errB})
-    }
+    const multipart = new multiparty.Form();
+    multipart.parse(req, async (err, fields, files) => {
+      if (!err) {
+        let file = files.file[0]
+        let [fileMd5] = fields.fileMd5
+        let [fileName] = fields.fileName
+        // 一些文件居然没后缀的,要处理一下
+        const haveSuffix = ~fileName.lastIndexOf('.')
+        let nameSuffix  // 文件后缀
+        haveSuffix ? nameSuffix = fileName.slice(fileName.lastIndexOf('.'),fileName.length) : nameSuffix = ''
+        let justMd5 = fileMd5.slice(0,fileMd5.lastIndexOf('-'))
+        let folderPath = path.join(staticPath,'cache',justMd5)  // 所有切片的文件夹
+        let dirPath = path.join(folderPath,`${fileMd5}${nameSuffix}`)
+        if(!fs.existsSync(folderPath)){ fs.mkdirSync(folderPath) }  // static文件夹一定要保证有,否则就会报错
+        const buffer = fs.readFileSync(file.path)  // 根据file对象的路径获取file对象里的内容
+        fs.writeFile(dirPath,buffer,(err)=>{
+            if(!err){
+                res.send({result:1,msg:'单片上传完成',data:{folderPath,fileMd5,justMd5,nameSuffix,fileName}})
+            }
+        })
+      }else{
+        res.send({result:-1,msg:'上传失败',data:err})
+      }
+    })  
 })
 // 根据md5标识合并所有切片
 router.post('/mergeSlice', cors(), (req,res)=>{

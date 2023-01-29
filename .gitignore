@@ -22,7 +22,7 @@ selenium-debug.log
 package-lock.json
 yarn.lock
 
-# 不忽略的文件
+# 不忽略的文件的正确写法,是要组合写的
 server/static/*
 !server/static/cache/.gitignore
 !server/static/finish/.gitignore
