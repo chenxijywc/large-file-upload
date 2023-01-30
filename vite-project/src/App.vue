@@ -134,13 +134,13 @@
       const theSameMd5Arr = toRaw(taskArr.value).filter(item => item.md5 === fileMd5)
       const needDelete = theSameMd5Arr.pop()
       if(theSameMd5Arr.length > 0){
-        const needIndex = taskArr.value.findIndex((item) => item.id === needDelete.id)
+        const needIndex = taskArr.value.findIndex((item) => item.id === needDelete!.id)
         const needIndexB = taskArr.value.findIndex((item) => item.id === theSameMd5Arr[0].id)
         if(theSameMd5Arr[0].state === 2){
           message(`${theSameMd5Arr[0].name} 已经正在上传中了`)
           taskArr.value.splice(needIndex,1)
         }else{
-          message(`${needDelete.name} 之前已经上传了部分,现在可以继续上传`)
+          message(`${needDelete!.name} 之前已经上传了部分,现在可以继续上传`)
           taskArr.value.splice(needIndex,1)
           taskArr.value[needIndexB].state = 2
           inTaskArrItem = taskArr.value[needIndexB]
