@@ -1,19 +1,19 @@
 <template>
     <div v-for="item in props.taskArr" :key="item.id">
-      <div class="listItem">
-        <div class="leftBox">
-          <p class="leftBox_fileName">
+      <div class="list_item">
+        <div class="left_box">
+          <p class="left_box_fileName">
             {{item.name}}
           </p>
-          <div class="leftBox_percentage">
-            <div class="percentageBac">
-              <div class="percentageBox" :style="{width: `${item.percentage}%`}">
+          <div class="left_box_percentage">
+            <div class="percentage_bac">
+              <div class="percentage_box" :style="{width: `${item.percentage}%`}">
               </div>
-              <div class="percentageBox_sapn">
+              <div class="percentage_box_span">
                 <span>{{Math.floor(item.percentage)}}%</span>
               </div>
             </div>
-            <div class="bottomHint">
+            <div class="bottom_hint">
               <div>
                  <p>{{fileSize(item.fileSize)}}</p>
               </div>
@@ -29,9 +29,9 @@
           </div>
         </div>
         <div class="rightBtn">
-          <div class="mybtn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
-          <div class="mybtn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
-          <div class="mybtn redBtn" @click="reset(item)">取消</div>
+          <div class="my_btn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
+          <div class="my_btn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
+          <div class="my_btn redBtn" @click="reset(item)">取消</div>
         </div>
       </div>
     </div>
@@ -77,19 +77,19 @@ import { taskArrItem } from '@/api/home'
 </script>
 
 <style scoped>
-  .listItem{margin: 0 10px 20px 10px;display: flex;transition: all 1s;}
-  .percentageBac{height:20px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .5) inset;
+  .list_item{margin: 0 10px 20px 10px;display: flex;transition: all 1s;}
+  .percentage_bac{height:20px;width: 100%;border-radius: 8px;background-color: #1b1f24;margin: 10px 0;box-shadow: 0 5px 10px rgba(0, 0, 0, .5) inset;
                   position: relative;overflow: hidden;}
-  .percentageBox{height:100%;transition: all .1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
-  .percentageBox_sapn{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;color: #e1eae2;height: 20px;line-height: 20px;}
-  .leftBox{flex: 1;margin: 10px 0;font-size: 14px;}
-  .leftBox_percentage{flex: 1;margin: 0 10px;}
-  .leftBox_fileName{margin: 0 10px;font-weight: bold;font-size: 18px;}
+  .percentage_box{height:100%;transition: all .1s;background-color: #73c944;border-radius: 8px;display: flex;justify-content: center;align-items: center;}
+  .percentage_box_span{position: absolute;top:0;left: 0;width: 100%;display: flex;justify-content: center;font-size: 14px;color: #e1eae2;height: 20px;line-height: 20px;}
+  .left_box{flex: 1;margin: 10px 0;font-size: 14px;}
+  .left_box_percentage{flex: 1;margin: 0 10px;}
+  .left_box_fileName{margin: 0 10px;font-weight: bold;font-size: 18px;}
   .rightBtn{display: flex;width:130px;font-size: 14px;justify-content: center;align-items: center;}
-  .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
+  .my_btn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
         display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
-  .mybtn:hover{opacity: 1;}
+  .my_btn:hover{opacity: 1;}
   .blueBtn{background-color: #409eff;}
   .redBtn{background-color: #f56c6c;}
-  .bottomHint{opacity: 0.8;display: flex;align-items: center;}
+  .bottom_hint{opacity: 0.8;display: flex;align-items: center;}
 </style>

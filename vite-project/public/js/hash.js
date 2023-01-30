@@ -17,7 +17,7 @@ self.onmessage = async (e) =>{
       await loadNext(endFile)
     }
     const md = sparkMD5.end()
-    self.postMessage({name:"succee",data:md})
+    self.postMessage({name:"succeed",data:md})
     self.close()
   }catch(err){
     self.postMessage({name:"error",data:err})

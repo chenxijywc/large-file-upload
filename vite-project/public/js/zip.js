@@ -12,7 +12,7 @@ self.onmessage = (e) =>{
          level: 2 // 压缩等级1~9 1压缩速度最快，9最优压缩方式
        }
      }).then((res)=>{
-        self.postMessage({name:"succee",data:res})
+        self.postMessage({name:"succeed",data:res})
         self.close()
      })
   }catch(err){

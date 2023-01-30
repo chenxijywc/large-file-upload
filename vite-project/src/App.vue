@@ -1,19 +1,19 @@
 <template>
   <div class="page">
-    <div class="pageTop">
+    <div class="page_top">
       <p>正在上传 ({{ statistics }})</p>
-      <div class="pageTop_right" :style="{'justify-content': taskArr.length > 1 ? 'space-between' : 'flex-end'}">
-        <p class="clearBtn" @click="clear" v-if="taskArr.length > 1">全部取消</p>
-        <p class="clearBtn" @click="clickClearDir">清空本地和服务器存储的文件</p>
+      <div class="page_top_right" :style="{'justify-content': taskArr.length > 1 ? 'space-between' : 'flex-end'}">
+        <p class="clear_btn" @click="clear" v-if="taskArr.length > 1">全部取消</p>
+        <p class="clear_btn" @click="clickClearDir">清空本地和服务器存储的文件</p>
       </div>
     </div>
     <div class="content" ref="contentRef">
       <ListItem :task-arr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
     </div>
-    <div class="bottomBox">
-      <div class="inputBtn">
+    <div class="bottom_box">
+      <div class="input_btn">
           选择文件上传
-          <input type="file" multiple class="isInput" @change="inputChange">
+          <input type="file" multiple class="is_input" @change="inputChange">
       </div>
     </div>
   </div>
@@ -198,7 +198,7 @@
       worker.postMessage({file})
       worker.onmessage = (e) =>{
         const {name,data} = e.data
-        name === 'succee' ? resolve(data) : reject(data)
+        name === 'succeed' ? resolve(data) : reject(data)
       }
     })
   }
@@ -298,37 +298,20 @@
       }, duration)
     }, 0)
   }
-  // 压缩文件
-  const zipWorker = (file:File,name:string) =>{
-    return new Promise((resolve,reject)=>{
-      const worker = new Worker('./js/zip.js')  //复杂的计算,使用web Worker提高性能
-      worker.postMessage({file,name})
-      worker.onmessage = (e) =>{
-        const {name,data} = e.data
-        name === 'succee' ? resolve(data) : reject(data)
-      }
-    })
-  }
 </script>
 <style scoped>
   .page{margin:0 auto;background-color: #28323e;width: 100%;height: 100vh;color:#ffffff;position: relative;}
-  .pageTop{height: 48px;padding: 0 48px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
-  .pageTop_right{width: 260px;display: flex;}
-  .pageTop>p{padding: 12px;}
-  .clearBtn{cursor: pointer;color: #853b3c;user-select: none;}
-  .clearBtn:hover{cursor: pointer;color: #b65658;}
+  .page_top{height: 48px;padding: 0 48px;display: flex;justify-content: space-between;align-items: center;font-size: 14px;color:#8386be;}
+  .page_top_right{width: 260px;display: flex;}
+  .page_top>p{padding: 12px;}
+  .clear_btn{cursor: pointer;color: #853b3c;user-select: none;}
+  .clear_btn:hover{cursor: pointer;color: #b65658;}
   .content{max-width: 1000px;margin: 0 auto;overflow-y: auto; height: calc(100vh - 128px);border-radius: 14px;background-color: #303944;border: 1px solid #252f3c;
             box-shadow: 0 0 10px rgba(0, 0, 0, .5) inset;}
-  :deep(.el-progress-bar__innerText){color: black;}
-  .mybtn{padding: 2px 10px;height: 24px;border-radius: 8px;display: flex;cursor: pointer;margin: 10px 8px;opacity: 0.8;
-        display: flex;justify-content: center;align-items: center;user-select: none;min-width: 48px;}
-  .mybtn:hover{opacity: 1;}
-  .blueBtn{background-color: #409eff;}
-  .redBtn{background-color: #f56c6c;}
-  .bottomBox{text-align: center;position: absolute;bottom: 0;left: 0;height: 80px;width: 100%;display: flex;align-items: center;}
-  .inputBtn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
-  .inputBtn{width: 200px;background-color: #409eff;opacity: 0.8;position: relative;padding: 8px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
-  .inputBtn:hover{opacity: 1;}
+  .bottom_box{text-align: center;position: absolute;bottom: 0;left: 0;height: 80px;width: 100%;display: flex;align-items: center;}
+  .input_btn>input{position: absolute;top: 0;left: 0;width: 100%;height: 100%;opacity: 0;cursor: pointer;}
+  .input_btn{width: 200px;background-color: #409eff;opacity: 0.8;position: relative;padding: 8px 16px;border-radius: 8px;margin: 0 auto;user-select: none;}
+  .input_btn:hover{opacity: 1;}
   :deep(.messageBac){position: fixed;width: 100%;top:0;left: 0;display: flex;justify-content: center;pointer-events: none;transition: all .3s;transform: translateY(-34px);opacity: 0;}
   :deep(.messageShow){transform: translateY(20px);opacity: 1;}
   :deep(.message){background-color: #c7d1e5;color: #737a88;border-radius: 8px;padding: 4px 16px;}
