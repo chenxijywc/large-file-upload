@@ -19,8 +19,8 @@
               </div>
               <div style="margin-left: 4px;">
                 <div v-if="item.state === 0" style="height:24px;width: 100%;"></div>
-                <p v-else-if="item.state === 1">文件正在解析中...</p>
-                <p v-else-if="item.state === 2">文件正在上传中...</p>
+                <p v-else-if="item.state === 1">正在解析中...</p>
+                <p v-else-if="item.state === 2">正在上传中...</p>
                 <p v-else-if="item.state === 3">暂停中</p>
                 <p v-else-if="item.state === 4">上传完成</p>
                 <p v-else-if="item.state === 5">上传失败</p>

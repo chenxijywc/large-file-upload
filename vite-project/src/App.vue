@@ -27,14 +27,14 @@
 </template>
 <script setup lang="ts">
   import { onMounted, ref, getCurrentInstance, toRaw, watch, computed, nextTick } from 'vue'
-  import { update, checkFile, mergeSlice, AllDatasItem, taskArrItem, clearDir } from '@/api/home'
+  import { update, checkFile, mergeSlice, AllDataItem, taskArrItem, clearDir } from '@/api/home'
   import ListItem from '@/listItem.vue'
   // 显示到视图层的初始数据:
   const contentRef = ref()
   const localForage = (getCurrentInstance()!.proxy as any).$localForage
   const unit = 1024*1024*3  //每个切片的大小定位3m
   const taskArr = ref<Array<taskArrItem>>([])
-  let updateingArr:Array<taskArrItem> = []
+  let uploadingArr:Array<taskArrItem> = []
   const statistics = computed(()=>{
     const otherArr = taskArr.value.filter(item => item.state !== 4)
     return `${otherArr.length}/${taskArr.value.length}`
@@ -52,17 +52,17 @@
   // 注册事件:
   // 暂停
   const pauseUpdate = (item:taskArrItem,elsePause=true) =>{
-    // console.log(item.allDatas.length,'还剩下多少片要继续上传的')
+    // console.log(item.allData.length,'还剩下多少片要继续上传的')
     elsePause ? item.state = 3 : item.state = 5  // elsePause为true,就是纯暂停.为false就是上传都失败了
     item.errNumber = 0
-    for (const itemB of item.allDatas) {
+    for (const itemB of item.allData) {
       itemB.cancel ? itemB.cancel('stopRequest') : ''
     }
   }
   // 继续
   const goonUpdate = (item:taskArrItem) =>{
     item.state = 2
-    if(item.allDatas.length > 0){
+    if(item.allData.length > 0){
       const progressTotal = 100 - item.percentage
       slicesUpdate(item,progressTotal)
     }
@@ -71,12 +71,12 @@
   const reset = async(item:taskArrItem) =>{
     pauseUpdate(item)
     taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
-    updateingArr = updateingArr.filter(itemB => itemB.id !== item.id)
+    uploadingArr = uploadingArr.filter(itemB => itemB.id !== item.id)
   }
   // 全部取消
   const clear = () =>{
     const allId = toRaw(taskArr.value).map(item => item.id)
-    updateingArr = updateingArr.filter(item => !allId.includes(item.id))
+    uploadingArr = uploadingArr.filter(item => !allId.includes(item.id))
     taskArr.value = []
   }
   // 清空
@@ -84,7 +84,7 @@
     const res = await clearDir()
     if(res.result === 1){
       taskArr.value = []
-      updateingArr = []
+      uploadingArr = []
       localForage.clear()
       message('清空成功')
     }
@@ -109,7 +109,7 @@
         name:file.name,
         state:0,
         fileSize:file.size,
-        allDatas:[],  // 所有请求的数据
+        allData:[],  // 所有请求的数据
         finishNumber:0,  //请求完成的个数
         errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传失败
         percentage:0
@@ -123,36 +123,36 @@
         continue
       }
       const fileMd5 = await useWorker(file)
-      // const fileZip = await zipWorker(file,fileMd5 as string)
-      // console.log(fileZip,'压缩完成')
+      console.log(fileMd5,'哈希计算完成')
       inTaskArrItem.state = 2
       inTaskArrItem.md5 = fileMd5 as string
       const sliceNumber = Math.ceil(file.size/unit)  // 向上取证切割次数,例如20.54,那里就要为了那剩余的0.54再多遍历一次
       // 先看是不是有同一个文件在上传中或者在那暂停着
       // 再查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了,state为2是上传中,3是暂停中
-      const needUpdateingArr = updateingArr.filter(item => fileMd5 === item.md5 && item.state === 2)
-      const theSameMd5Arr = toRaw(taskArr.value).filter(item => item.md5 === fileMd5)
+      const isNeedUploadingArr = uploadingArr.filter(item => fileMd5 === item.md5 && item.state === 2)
+      const theSameMd5Arr = toRaw(taskArr.value).filter(item => item.md5 === fileMd5)  // 和当前文件的哈希值一直的文件进度
       const needDelete = theSameMd5Arr.pop()
-      if(theSameMd5Arr.length > 0){
+      if(theSameMd5Arr.length > 0 && theSameMd5Arr[0].state !== 4){
+        const firstItem = theSameMd5Arr[0]
         const needIndex = taskArr.value.findIndex((item) => item.id === needDelete!.id)
-        const needIndexB = taskArr.value.findIndex((item) => item.id === theSameMd5Arr[0].id)
-        if(theSameMd5Arr[0].state === 2){
-          message(`${theSameMd5Arr[0].name} 已经正在上传中了`)
+        const needIndexB = taskArr.value.findIndex((item) => item.id === firstItem.id)
+        if(firstItem.state === 2){
+          message(`${firstItem.name} 已经正在上传中了`)
           taskArr.value.splice(needIndex,1)
-        }else{
+        }else if(firstItem.state === 3){
           message(`${needDelete!.name} 之前已经上传了部分,现在可以继续上传`)
           taskArr.value.splice(needIndex,1)
           taskArr.value[needIndexB].state = 2
           inTaskArrItem = taskArr.value[needIndexB]
           slicesUpdate(inTaskArrItem)
         }
-      }else if(needUpdateingArr.length > 0){
-        const updateTaskObj = needUpdateingArr[0]
+      }else if(isNeedUploadingArr.length > 0){
+        const updateTaskObj = isNeedUploadingArr[0]
         message(`${updateTaskObj.name} 之前已经上传了部分,现在可以继续上传`)
         for (let i = 0; i < sliceNumber; i++) {
           const inFileMd5 = `${updateTaskObj.md5}-${i}`
-          const inAllDatasItem = updateTaskObj.allDatas.find((item) => item.fileMd5 === inFileMd5)
-          inAllDatasItem ? inAllDatasItem.file = file.slice(i*unit,i*unit+unit) : ''
+          const inAllDataItem = updateTaskObj.allData.find((item) => item.fileMd5 === inFileMd5)
+          inAllDataItem ? inAllDataItem.file = file.slice(i*unit,i*unit+unit) : ''
         }
         const needIndex = taskArr.value.findIndex((item) => item.md5 === fileMd5)
         taskArr.value.splice(needIndex,1,updateTaskObj)
@@ -160,12 +160,13 @@
         slicesUpdate(inTaskArrItem)
       }else {
         try{
-          const resB = await checkFile({md5:fileMd5})
+          const resB = await checkFile({md5:fileMd5,size:inTaskArrItem.fileSize})
+          const { result } = resB
           // 返回1说明服务器没有
-          if(resB.result === 1){
+          if(result === 1){
             for (let i = 0; i < sliceNumber; i++) {
               const sliceFile = file.slice(i*unit,i*unit+unit)
-              const needObj:AllDatasItem = {
+              const needObj:AllDataItem = {
                 file:sliceFile,
                 fileMd5:`${fileMd5}-${i}`,
                 sliceFileSize:sliceFile.size,
@@ -176,13 +177,18 @@
                 progressArr:[],
                 finish:false
               }
-              inTaskArrItem.allDatas.push(needObj)
+              inTaskArrItem.allData.push(needObj)
             }
             // console.log(inTaskArrItem,'inTaskArrItem')
             slicesUpdate(inTaskArrItem)
           }else{
-            // 该文件已经上传完成了
-            isFinishTask(inTaskArrItem)
+            // -1就是直接秒传完成,-2就是直接上传失败提示服务器剩余容量不足
+            if(result === -1){
+              isFinishTask(inTaskArrItem)
+            }else if(result === -2){
+              pauseUpdate(inTaskArrItem,false)
+              message('服务器剩余容量不足! 请清空本地和服务器存储的文件')
+            }
           }
         }catch(err){
           pauseUpdate(inTaskArrItem,false)
@@ -205,7 +211,7 @@
   // 切片上传
   const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
     // console.log(taskArrItem,'taskArrItem')
-    const needObj = taskArrItem.allDatas.slice(-1)[0]
+    const needObj = taskArrItem.allData.slice(-1)[0]
     const fd = new FormData()
     const { file,fileMd5,sliceFileSize,index,fileSize,fileName,sliceNumber } = needObj
     fd.append('file',file as File)
@@ -215,11 +221,11 @@
     fd.append('fileSize',String(fileSize))
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
-    AllDatasItemuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
+    AllDataItemQuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
       taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
       taskArrItem.finishNumber++
       needObj.finish = true
-      taskArrItem.allDatas = taskArrItem.allDatas.filter(item => item.index !== needObj.index)
+      taskArrItem.allData = taskArrItem.allData.filter(item => item.index !== needObj.index)
       if(taskArrItem.finishNumber === sliceNumber){
         const resB = await mergeSlice(res.data).catch(()=>{})
         resB && resB.result === 1 ? isFinishTask(taskArrItem) : pauseUpdate(taskArrItem,false)
@@ -240,7 +246,7 @@
     })
   }
   // 将上传文件请求封装
-  const AllDatasItemuest = (fd:FormData,needObj:AllDatasItem,taskArrItem:taskArrItem,progressTotal:number) => {
+  const AllDataItemQuest = (fd:FormData,needObj:AllDataItem,taskArrItem:taskArrItem,progressTotal:number) => {
     return update(fd,(progress)=>{
         const progressArr = needObj.progressArr
         let finishSize = progress.loaded
@@ -271,15 +277,15 @@
           i--
         }
       }
-      updateingArr = arr
-      console.log(updateingArr,'updateingArr')
+      uploadingArr = arr
+      console.log(uploadingArr,'uploadingArr')
   }
   // 存储任务到缓存
   const setTaskArr = async() =>{
     // localForage这个库的api不兼容Proxy对象和函数,要处理一下
     const needTaskArr = JSON.parse(JSON.stringify(taskArr.value))
     await localForage.setItem('taskArr',needTaskArr)
-    console.log('存储成功')
+    // console.log('存储成功')
   }
   // 消息提示
   const message = (msg:string,duration=3000) =>{

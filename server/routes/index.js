@@ -3,6 +3,7 @@ const router = express.Router()
 const cors = require('cors')
 const path = require('path')
 const fs = require('fs')
+const os = require('os')
 // const mySQL = require('./mySQL')
 let staticPath = path.join(__dirname,'..','static')
 const multiparty = require("multiparty")
@@ -62,18 +63,22 @@ router.post('/mergeSlice', cors(), (req,res)=>{
 // 查看有没这个文件
 router.post('/checkFile', cors(), (req,res)=>{
     try{
-        let { md5 } = req.body
-        let finishDir = path.join(staticPath,'finish')
-        fs.readdir(finishDir,(err,data)=>{
-            if(!err){
-                let otherArr = data.filter(item => item.slice(0,item.lastIndexOf('.')) === md5)
-                if(otherArr.length > 0){
-                    res.send({result:-1,msg:'该文件已经上传完成了'})
-                }else{
-                    res.send({result:1,msg:'还没上传过这个文件'})
+        let { md5,size } = req.body
+        if(size > os.freemem()){
+            res.send({result:-2,msg:'服务器剩余容量不足! 请清空本地和服务器存储的文件'})
+        }else{
+            let finishDir = path.join(staticPath,'finish')
+            fs.readdir(finishDir,(err,data)=>{
+                if(!err){
+                    let otherArr = data.filter(item => item.slice(0,item.lastIndexOf('.')) === md5)
+                    if(otherArr.length > 0){
+                        res.send({result:-1,msg:'该文件已经上传完成了'})
+                    }else{
+                        res.send({result:1,msg:'还没上传过这个文件'})
+                    }
                 }
-            }
-        }) 
+            }) 
+        }
     }catch(err){
         res.send({result:-1,msg:'上传失败',data:err})     
     }

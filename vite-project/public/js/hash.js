@@ -4,15 +4,15 @@ self.onmessage = async (e) =>{
   const file = e.data.file
   //切片
   const chunkSize = 1024*1024*3  // 每个切片的大小定位3m
-  const chunknum = Math.ceil(file.size / chunkSize)  // 切片数量
+  const chunkNum = Math.ceil(file.size / chunkSize)  // 切片数量
   const sparkMD5 = new SparkMD5.ArrayBuffer()
   //利用文件首尾分片的md5合并作为整个文件md5
   const firstFile = file.slice(0 * chunkSize, (0 + 1) * chunkSize)
   try{
-    if (chunknum === 1) {
+    if (chunkNum === 1) {
       await loadNext(firstFile)
     }else{
-      const endFile = file.slice((chunknum-1) * chunkSize, ((chunknum-1) + 1) * chunkSize)
+      const endFile = file.slice((chunkNum-1) * chunkSize, ((chunkNum-1) + 1) * chunkSize)
       await loadNext(firstFile)
       await loadNext(endFile)
     }
