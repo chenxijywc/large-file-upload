@@ -3,6 +3,7 @@ const bodyParser = require('body-parser')
 const os = require('os')
 const cors = require('cors')
 const path = require('path')
+const { addAbortSignal } = require('stream')
 
 //创建wab 服务器
 const app = express()
@@ -38,6 +39,11 @@ function getIPAdress() {
         }
     }
   }
+  // 启动服务之前监听全局异常,预防node服务器崩溃
+  process.on('uncaughtException',(err)=>{
+    console.log(err,'我在里边捕捉到了')
+  })
+
 
   app.listen(3000, () => {
     console.log(`http://${getIPAdress()}:3000`,'启动成功')
