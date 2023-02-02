@@ -57,7 +57,6 @@
       elsePause ? item.state = 3 : item.state = 5
     }
     item.errNumber = 0
-    console.log(item.state,'item.state')
     for (const itemB of item.allData) {
       itemB.cancel ? itemB.cancel() : ''
     }
@@ -84,12 +83,14 @@
   }
   // 全部取消
   const clear = () =>{
+    for (const item of taskArr.value) { pauseUpdate(item) }
     const allId = toRaw(taskArr.value).map(item => item.id)
     uploadingArr = uploadingArr.filter(item => !allId.includes(item.id))
     taskArr.value = []
   }
   // 清空
   const clickClearDir = async () =>{
+    for (const item of taskArr.value) { pauseUpdate(item) }
     const res = await clearDir()
     if(res.result === 1){
       taskArr.value = []
@@ -232,7 +233,7 @@
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
     const res = await AllDataItemQuest(fd,needObj,taskArrItem,progressTotal).catch(()=>{})
-    console.log(res,'res')
+    // console.log(res,'res')
     // 请求异常,或者请求成功服务端返回报错都按单片上传失败逻辑处理,.then.catch的.catch是只能捕捉请求异常的
     if(!res || res.result === -1){
       if(taskArrItem.state === 5 || taskArrItem.state === 3){return}  // 你都已经上传暂停或者中断了,就什么都不要再做了,及时停止
