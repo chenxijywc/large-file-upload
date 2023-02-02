@@ -53,7 +53,7 @@
   // 暂停
   const pauseUpdate = (item:taskArrItem,elsePause=true) =>{
     // 先看是不是失败的,如果不是elsePause为true,就是暂停.为false就是中断
-    if(item.state !== 6){
+    if(![4,6].includes(item.state)){
       elsePause ? item.state = 3 : item.state = 5
     }
     item.errNumber = 0
