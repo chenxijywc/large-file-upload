@@ -9,7 +9,6 @@ export interface AllDataItem{
   fileSize:number
   fileName:string
   sliceNumber:number
-  progressArr:Array<number>  // 所有进度数组
   cancel?:Function | void
   finish?:boolean
   // hint?:string  // 失败提示语
@@ -18,7 +17,7 @@ export interface taskArrItem{
   id:number | string
   md5:string
   name:string
-  state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传失败
+  state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传中断
   fileSize:number
   allData:Array<AllDataItem>  // 所有请求成功或者请求未成功的请求信息
   finishNumber:number

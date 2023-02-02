@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class="content" ref="contentRef">
-      <ListItem :task-arr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @reset="reset"/>
+      <ListItem :task-arr="taskArr" @pauseUpdate="pauseUpdate" @goonUpdate="goonUpdate" @anewUpload="anewUpload" @reset="reset"/>
     </div>
     <div class="bottom_box">
       <div class="input_btn">
@@ -52,9 +52,12 @@
   // 注册事件:
   // 暂停
   const pauseUpdate = (item:taskArrItem,elsePause=true) =>{
-    // console.log(item.allData.length,'还剩下多少片要继续上传的')
-    elsePause ? item.state = 3 : item.state = 5  // elsePause为true,就是纯暂停.为false就是上传都失败了
+    // 先看是不是失败的,如果不是elsePause为true,就是暂停.为false就是中断
+    if(item.state !== 6){
+      elsePause ? item.state = 3 : item.state = 5
+    }
     item.errNumber = 0
+    console.log(item.state,'item.state')
     for (const itemB of item.allData) {
       itemB.cancel ? itemB.cancel('stopRequest') : ''
     }
@@ -67,7 +70,13 @@
       slicesUpdate(item,progressTotal)
     }
   }
-  // 取消
+  // 重新上传
+  const anewUpload = (item:taskArrItem) =>{
+    item.state = 2
+    const progressTotal = 100 - item.percentage
+    slicesUpdate(item,progressTotal)
+  }
+  // 取消,取消了就是不想继续上传了,所以两个数组都将这个进度删掉
   const reset = async(item:taskArrItem) =>{
     pauseUpdate(item)
     taskArr.value = toRaw(taskArr.value).filter(itemB => itemB.id !== item.id)
@@ -111,7 +120,7 @@
         fileSize:file.size,
         allData:[],  // 所有请求的数据
         finishNumber:0,  //请求完成的个数
-        errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传失败
+        errNumber:0,  // 报错的个数,默认是0个,超多3个就是直接上传中断
         percentage:0
       }
       taskArr.value.push(inTaskArrItem)
@@ -119,6 +128,8 @@
       inTaskArrItem = taskArr.value.slice(-1)[0]
       inTaskArrItem.state = 1
       if(file.size === 0){
+        // 文件大小为0直接上传失败
+        inTaskArrItem.state = 6
         pauseUpdate(inTaskArrItem,false)
         continue
       }
@@ -130,7 +141,7 @@
       // 先看是不是有同一个文件在上传中或者在那暂停着
       // 再查本地再查远程服务器,本地已经上传了一半了就重新切割好对上指定的片,继续上传就可以了,state为2是上传中,3是暂停中
       const isNeedUploadingArr = uploadingArr.filter(item => fileMd5 === item.md5 && item.state === 2)
-      const theSameMd5Arr = toRaw(taskArr.value).filter(item => item.md5 === fileMd5)  // 和当前文件的哈希值一直的文件进度
+      const theSameMd5Arr = toRaw(taskArr.value).filter(item => item.md5 === fileMd5)  // 和当前文件的哈希值一致的文件进度
       const needDelete = theSameMd5Arr.pop()
       if(theSameMd5Arr.length > 0 && theSameMd5Arr[0].state !== 4){
         const firstItem = theSameMd5Arr[0]
@@ -139,7 +150,7 @@
         if(firstItem.state === 2){
           message(`${firstItem.name} 已经正在上传中了`)
           taskArr.value.splice(needIndex,1)
-        }else if(firstItem.state === 3){
+        }else if(firstItem.state === 3 || firstItem.state === 5){
           message(`${needDelete!.name} 之前已经上传了部分,现在可以继续上传`)
           taskArr.value.splice(needIndex,1)
           taskArr.value[needIndexB].state = 2
@@ -174,7 +185,6 @@
                 fileSize:file.size,
                 fileName:file.name,
                 sliceNumber,
-                progressArr:[],
                 finish:false
               }
               inTaskArrItem.allData.push(needObj)
@@ -182,7 +192,7 @@
             // console.log(inTaskArrItem,'inTaskArrItem')
             slicesUpdate(inTaskArrItem)
           }else{
-            // -1就是直接秒传完成,-2就是直接上传失败提示服务器剩余容量不足
+            // -1就是直接秒传完成,-2就是直接上传中断提示服务器剩余容量不足
             if(result === -1){
               isFinishTask(inTaskArrItem)
             }else if(result === -2){
@@ -222,25 +232,34 @@
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
     AllDataItemQuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
-      taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
-      taskArrItem.finishNumber++
-      needObj.finish = true
-      taskArrItem.allData = taskArrItem.allData.filter(item => item.index !== needObj.index)
-      if(taskArrItem.finishNumber === sliceNumber){
-        const resB = await mergeSlice(res.data).catch(()=>{})
-        resB && resB.result === 1 ? isFinishTask(taskArrItem) : pauseUpdate(taskArrItem,false)
-        taskArrItem.finishNumber = 0
-      }else{
-        slicesUpdate(taskArrItem)
+      const { result,data } = res
+      if(result === 1){
+        taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
+        taskArrItem.finishNumber++
+        needObj.finish = true
+        taskArrItem.allData = taskArrItem.allData.filter(item => item.index !== needObj.index)  // 上传成功了就删掉那一片
+        if(taskArrItem.finishNumber === sliceNumber){
+          const resB = await mergeSlice(data).catch(()=>{})
+          resB && resB.result === 1 ? isFinishTask(taskArrItem) : pauseUpdate(taskArrItem,false)
+          taskArrItem.finishNumber = 0
+        }else{
+          slicesUpdate(taskArrItem)
+        }
+      }else if(result === -2){
+        pauseUpdate(taskArrItem,false)
+        message('服务器剩余容量不足! 请清空本地和服务器存储的文件')
       }
     }).catch((err)=>{
-      if(taskArrItem.state === 5){return}  // 你都已经上传失败了,就什么都不用做了
+      if(taskArrItem.state === 5){return}  // 你都已经上传中断了,就什么都不用做了
       if(!(err.message && err.message === 'stopRequest')){
-        console.log(err.message,'真的请求失败了')
         taskArrItem.errNumber++
-        // 超过3次之后上传失败
+        // 超过3次之后直接上传中断
         if(taskArrItem.errNumber > 3){
-          pauseUpdate(taskArrItem,false)  // 上传失败
+          console.log('超过三次了')
+          pauseUpdate(taskArrItem,false)  // 上传中断
+        }else{
+          console.log('还没超过3次')
+          slicesUpdate(taskArrItem)
         }
       }
     })
@@ -248,30 +267,23 @@
   // 将上传文件请求封装
   const AllDataItemQuest = (fd:FormData,needObj:AllDataItem,taskArrItem:taskArrItem,progressTotal:number) => {
     return update(fd,(progress)=>{
-        const progressArr = needObj.progressArr
-        let finishSize = progress.loaded
-        if(progressArr.length > 0){
-          const endItem = progressArr.slice(-1)[0]
-          finishSize = finishSize - endItem
-        }
+        // 即使是超时请求也是会频繁的返回上传进度的,所以只能写成完成一片就添加它所占百分之多少,否则会造成误会
         const placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
-        const needProgress = placeholder*(finishSize / progress.total)  // 只占份数最新完成了多少
-        progressArr.push(progress.loaded)
-        const enPercentage = taskArrItem.percentage + needProgress
-        if(taskArrItem.percentage < enPercentage && enPercentage < 100){
-          taskArrItem.percentage = enPercentage
-        }
+        const finishSize = progress.loaded
+        finishSize === progress.total && taskArrItem.percentage < 100 ? taskArrItem.percentage = taskArrItem.percentage + placeholder : ''
       },(cancel)=>{
         needObj.cancel = cancel
       })
   }
   // 获取本地有没要继续上传的任务,状态为2都是可以继续上传的,1,4和5都没必要继续上传了
+  // 暂停的,继续上传的,上传中断的自动继续上传
   const getTaskArr = async () =>{
     const arr = await localForage.getItem('taskArr').catch(()=>{})
       if(!arr || arr.length === 0){return}
       for (let i = 0; i < arr.length; i++) {
         const item = arr[i]
         item.state === 3 ? item.state = 2 : ''
+        item.state === 5 ? item.state = 2 : ''
         if(item.state !== 2){
           arr.splice(i,1)
           i--
