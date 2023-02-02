@@ -38,7 +38,7 @@ function getIPAdress() {
         }
     }
   }
-  // 启动服务之前监听全局异常,预防node服务器崩溃
+  // 启动服务之前监听全局异常,监听会导致node服务器崩溃的异常,预防node服务器崩溃
   process.on('uncaughtException',(err)=>{
     console.log(err,'我在里边捕捉到了')
   })
