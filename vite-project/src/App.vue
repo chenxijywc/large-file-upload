@@ -59,7 +59,7 @@
     item.errNumber = 0
     console.log(item.state,'item.state')
     for (const itemB of item.allData) {
-      itemB.cancel ? itemB.cancel('stopRequest') : ''
+      itemB.cancel ? itemB.cancel() : ''
     }
   }
   // 继续
@@ -219,7 +219,7 @@
     })
   }
   // 切片上传
-  const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
+  const slicesUpdate = async (taskArrItem:taskArrItem,progressTotal = 100) =>{
     // console.log(taskArrItem,'taskArrItem')
     const needObj = taskArrItem.allData.slice(-1)[0]
     const fd = new FormData()
@@ -231,7 +231,21 @@
     fd.append('fileSize',String(fileSize))
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
-    AllDataItemQuest(fd,needObj,taskArrItem,progressTotal).then(async(res)=>{
+    const res = await AllDataItemQuest(fd,needObj,taskArrItem,progressTotal).catch(()=>{})
+    console.log(res,'res')
+    // 请求异常,或者请求成功服务端返回报错都按单片上传失败逻辑处理,.then.catch的.catch是只能捕捉请求异常的
+    if(!res || res.result === -1){
+      if(taskArrItem.state === 5 || taskArrItem.state === 3){return}  // 你都已经上传暂停或者中断了,就什么都不要再做了,及时停止
+      taskArrItem.errNumber++
+      // 超过3次之后直接上传中断
+      if(taskArrItem.errNumber > 3){
+        console.log('超过三次了')
+        pauseUpdate(taskArrItem,false)  // 上传中断
+      }else{
+        console.log('还没超过3次')
+        slicesUpdate(taskArrItem)
+      }
+    }else{
       const { result,data } = res
       if(result === 1){
         taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
@@ -249,20 +263,7 @@
         pauseUpdate(taskArrItem,false)
         message('服务器剩余容量不足! 请清空本地和服务器存储的文件')
       }
-    }).catch((err)=>{
-      if(taskArrItem.state === 5){return}  // 你都已经上传中断了,就什么都不用做了
-      if(!(err.message && err.message === 'stopRequest')){
-        taskArrItem.errNumber++
-        // 超过3次之后直接上传中断
-        if(taskArrItem.errNumber > 3){
-          console.log('超过三次了')
-          pauseUpdate(taskArrItem,false)  // 上传中断
-        }else{
-          console.log('还没超过3次')
-          slicesUpdate(taskArrItem)
-        }
-      }
-    })
+    }
   }
   // 将上传文件请求封装
   const AllDataItemQuest = (fd:FormData,needObj:AllDataItem,taskArrItem:taskArrItem,progressTotal:number) => {
