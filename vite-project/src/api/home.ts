@@ -41,9 +41,9 @@ export function checkFile (data:CheckFileReq) {
   return service.post('/checkFile', data)
 }
 // 上传文件
-export function update (data:FormData, onUploadProgress:(progress:ProgressEvent)=>void, getCancelToken:(cancel:Function)=>void) {
+export function update (data:FormData, getCancelToken:(cancel:Function)=>void) {
   const CancelToken = axios.CancelToken
-  return service.post('/update', data, { onUploadProgress, cancelToken: new CancelToken(getCancelToken) })
+  return service.post('/update', data, { cancelToken: new CancelToken(getCancelToken) })
 }
 // 合并所有切片
 export function mergeSlice (data:mergeSliceReq) {

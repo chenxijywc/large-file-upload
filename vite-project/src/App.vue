@@ -232,7 +232,7 @@
     fd.append('fileSize',String(fileSize))
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
-    const res = await AllDataItemQuest(fd,needObj,taskArrItem,progressTotal).catch(()=>{})
+    const res = await update(fd,(cancel)=>{ needObj.cancel = cancel }).catch(()=>{})
     // console.log(res,'res')
     // 请求异常,或者请求成功服务端返回报错都按单片上传失败逻辑处理,.then.catch的.catch是只能捕捉请求异常的
     if(!res || res.result === -1){
@@ -249,6 +249,7 @@
     }else{
       const { result,data } = res
       if(result === 1){
+        sliceProgress(needObj,taskArrItem,progressTotal)  // 更新进度条
         taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
         taskArrItem.finishNumber++
         needObj.finish = true
@@ -266,16 +267,11 @@
       }
     }
   }
-  // 将上传文件请求封装
-  const AllDataItemQuest = (fd:FormData,needObj:AllDataItem,taskArrItem:taskArrItem,progressTotal:number) => {
-    return update(fd,(progress)=>{
-        // 即使是超时请求也是会频繁的返回上传进度的,所以只能写成完成一片就添加它所占百分之多少,否则会造成误会
-        const placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
-        const finishSize = progress.loaded
-        finishSize === progress.total && taskArrItem.percentage < 100 ? taskArrItem.percentage = taskArrItem.percentage + placeholder : ''
-      },(cancel)=>{
-        needObj.cancel = cancel
-      })
+  // 完全一片就更新一次进度条
+  const sliceProgress = (needObj:AllDataItem,taskArrItem:taskArrItem,progressTotal:number) =>{
+    // 即使是超时请求也是会频繁的返回上传进度的,所以只能写成完成一片就添加它所占百分之多少,否则会造成误会
+    const placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
+    taskArrItem.percentage = taskArrItem.percentage + placeholder
   }
   // 获取本地有没要继续上传的任务,状态为2都是可以继续上传的,1,4和5都没必要继续上传了
   // 暂停的,继续上传的,上传中断的自动继续上传
