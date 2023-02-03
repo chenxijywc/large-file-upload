@@ -233,7 +233,6 @@
     fd.append('fileName',fileName)
     fd.append('sliceNumber',String(sliceNumber))
     const res = await update(fd,(cancel)=>{ needObj.cancel = cancel }).catch(()=>{})
-    // console.log(res,'res')
     // 请求异常,或者请求成功服务端返回报错都按单片上传失败逻辑处理,.then.catch的.catch是只能捕捉请求异常的
     if(!res || res.result === -1){
       if(taskArrItem.state === 5 || taskArrItem.state === 3){return}  // 你都已经上传暂停或者中断了,就什么都不要再做了,及时停止
