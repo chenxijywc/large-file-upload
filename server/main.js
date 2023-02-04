@@ -21,9 +21,9 @@ app.use(cors())
 // 添加路由到应用上
 app.use('/',require('./routes/index'))
 
-console.log(os.totalmem()/1024/1024/1024,'磁盘所有空间')
-console.log(os.freemem(),'磁盘剩余空间')
-console.log(os.freemem()/1024/1024/1024,'磁盘剩余空间')
+console.log(os.totalmem()/1024/1024/1024,'内存总量')
+console.log(os.freemem(),'空闲内存量')
+console.log(os.freemem()/1024/1024/1024,'空闲内存量')
 
 // 获取ip地址
 function getIPAdress() {

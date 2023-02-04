@@ -279,8 +279,7 @@
       if(!arr || arr.length === 0){return}
       for (let i = 0; i < arr.length; i++) {
         const item = arr[i]
-        item.state === 3 ? item.state = 2 : ''
-        item.state === 5 ? item.state = 2 : ''
+        item.state === 3 || item.state === 5 ? item.state = 2 : ''
         if(item.state !== 2){
           arr.splice(i,1)
           i--
