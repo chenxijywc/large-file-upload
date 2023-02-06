@@ -32,9 +32,7 @@
         <div class="rightBtn">
           <div class="my_btn redBtn" @click="pauseUpdate(item)" v-if="[1,2].includes(item.state)">暂停</div>
           <!-- 暂停中显示的继续按钮 -->
-          <div class="my_btn blueBtn" @click="goonUpdate(item)" v-if="[3].includes(item.state)">继续</div>
-          <!-- 中断显示的继续按钮 -->
-          <div class="my_btn blueBtn" @click="anewUpload(item)" v-if="[5].includes(item.state)">继续</div>
+          <div class="my_btn blueBtn" @click="goonUpdate(item)" v-if="[3,5].includes(item.state)">继续</div>
           <div class="my_btn redBtn" @click="reset(item)">取消</div>
         </div>
       </div>
@@ -49,7 +47,7 @@ import { taskArrItem } from '@/api/home'
     const props = defineProps({
         taskArr:{type:Array<taskArrItem>,default:[]}
     })
-    const emit = defineEmits(['pauseUpdate', 'goonUpdate', 'anewUpload', 'reset'])
+    const emit = defineEmits(['pauseUpdate', 'goonUpdate', 'reset'])
     // 暂停
     const pauseUpdate = (item:taskArrItem) => {
         emit('pauseUpdate', item)
@@ -57,10 +55,6 @@ import { taskArrItem } from '@/api/home'
     // 继续上传
     const goonUpdate = (item:taskArrItem) => {
         emit('goonUpdate', item)
-    }
-    // 重新上传
-    const anewUpload = (item:taskArrItem) => {
-        emit('anewUpload', item)
     }
     // 取消
     const reset = (item:taskArrItem) => {
