@@ -20,6 +20,7 @@ export interface taskArrItem{
   state:number  // 0是什么都不做,1文件处理中,2是上传中,3是暂停,4是上传完成,5上传中断
   fileSize:number
   allData:Array<AllDataItem>  // 所有请求成功或者请求未成功的请求信息
+  whileRequests:Array<AllDataItem>
   finishNumber:number
   errNumber:number
   percentage:number  // 进度条
