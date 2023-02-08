@@ -98,7 +98,6 @@
     const isFinishTask = (item:taskArrItem) =>{
       item.percentage = 100
       item.state = 4
-      console.log('上传完成---------------------------------')
     }
     // 输入框change事件
     const inputChange = async(e:Event) =>{
@@ -150,7 +149,7 @@
           }else if(firstItem.state === 3 || firstItem.state === 5){
             message(`${needDelete!.name} 之前已经上传了部分,现在可以继续上传`)
             taskArr.value.splice(needIndex,1)
-            let updateObj = taskArr.value[needIndexB]
+            const updateObj = taskArr.value[needIndexB]
             updateObj.state = 2
             updateObj.allData.push(...updateObj.whileRequests)
             updateObj.whileRequests = []
@@ -220,19 +219,15 @@
     }
     // 切片上传
     const slicesUpdate = (taskArrItem:taskArrItem,progressTotal = 100) =>{
+      // 一片都没有了,或者有正在请求中的接口,都直接不执行下边的逻辑,毕竟都有正在请求中的还上传,容易造成并发数高于浏览器限制
       if(taskArrItem.allData.length === 0 || taskArrItem.whileRequests.length > 0){return}
-      let isTaskArrIng = toRaw(taskArr.value).filter(itemB => itemB.state === 1 || itemB.state === 2)
-      maxNumb = Math.ceil(6/isTaskArrIng.length)
-      console.log(maxNumb,'maxNumb')
+      const isTaskArrIng = toRaw(taskArr.value).filter(itemB => itemB.state === 1 || itemB.state === 2)
+      maxNumb = Math.ceil(6/isTaskArrIng.length)  // 实时动态获取并发请求数,每次掉请求前都获取一次最大并发数
       const whileRequest = taskArrItem.allData.slice(-maxNumb)
-      console.log(taskArrItem.allData.length,'taskArrItem.allData.length')
       taskArrItem.allData.length > maxNumb ? taskArrItem.allData.length = taskArrItem.allData.length - maxNumb : taskArrItem.allData.length = 0
-      console.log(taskArrItem.whileRequests,'taskArrItem.whileRequests')
-      console.log(whileRequest,'whileRequest')
       taskArrItem.whileRequests.push(...whileRequest)
-      console.log(taskArrItem.whileRequests.length,'taskArrItem.whileRequests')
-      for (const item of whileRequest) { 
-        isUpdate(item) 
+      for (const item of whileRequest) {
+        isUpdate(item)
       }
       // 单个分片请求
       async function isUpdate(needObj:AllDataItem){
@@ -256,7 +251,7 @@
             pauseUpdate(taskArrItem,false)  // 上传中断
           }else{
             console.log('还没超过3次')
-            isUpdate(needObj)
+            isUpdate(needObj)  // 失败了一片,单个分片请求
           }
         }else{
           const { result,data } = res
@@ -265,8 +260,7 @@
             taskArrItem.errNumber > 0 ? taskArrItem.errNumber-- : ''
             taskArrItem.finishNumber++
             needObj.finish = true
-            // taskArrItem.allData = taskArrItem.allData.filter(item => item.index !== needObj.index)  // 上传成功了就删掉那一片
-            taskArrItem.whileRequests = taskArrItem.whileRequests.filter(item => item.index !== needObj.index)  // 上传成功了就删掉那一片
+            taskArrItem.whileRequests = taskArrItem.whileRequests.filter(item => item.index !== needObj.index)  // 上传成功了就删掉请求中数组中的那一片
             console.log(taskArrItem.whileRequests.length,'请求成功了')
             if(taskArrItem.finishNumber === sliceNumber){
               const resB = await mergeSlice(data).catch(()=>{})
@@ -358,4 +352,3 @@
         100% {opacity: 1;}
     }
   </style>
-  
