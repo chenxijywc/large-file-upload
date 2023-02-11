@@ -11,6 +11,7 @@
 1.  双击 npmITwo.bat 文件一次初始化前后端两个项目
 2.  前端项目:vite-project, 后端项目:server
 3.  两个项目的启动命令都是 npm run dev
+4.  node >= 14
 
 
 #### 特技
