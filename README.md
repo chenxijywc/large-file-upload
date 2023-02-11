@@ -4,7 +4,7 @@
 大文件上传
 
 #### 软件架构
-软件架构说明
+前端:Vue3+Ts+axios+Vite  后端:node+express
 
 #### 使用说明
 
