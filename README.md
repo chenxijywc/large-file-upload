@@ -6,25 +6,11 @@
 #### 软件架构
 软件架构说明
 
-
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
 #### 使用说明
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+1.  双击 npmITwo.bat 文件一次初始化前后端两个项目
+2.  前端项目:vite-project, 后端项目:server
+3.  两个项目的启动命令都是 npm run dev
 
 
 #### 特技
