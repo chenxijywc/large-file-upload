@@ -276,7 +276,7 @@
         }
       }
     }
-    // 完全一片就更新一次进度条
+    // 更新进度条
     const sliceProgress = (needObj:AllDataItem,taskArrItem:taskArrItem,progressTotal:number) =>{
       // 即使是超时请求也是会频繁的返回上传进度的,所以只能写成完成一片就添加它所占百分之多少,否则会造成误会
       const placeholder = progressTotal/needObj.sliceNumber  // 每一片占100的多少
