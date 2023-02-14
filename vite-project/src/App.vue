@@ -35,7 +35,7 @@
     const unit = 1024*1024*3  //每个切片的大小定位3m
     const taskArr = ref<Array<taskArrItem>>([])
     let uploadingArr:Array<taskArrItem> = []
-    let maxNumb = 6  // 每次请求中的个数
+    let maxNumb = 6  // 最大请求并发数
     const statistics = computed(()=>{
       const otherArr = taskArr.value.filter(item => item.state !== 4)
       return `${otherArr.length}/${taskArr.value.length}`
