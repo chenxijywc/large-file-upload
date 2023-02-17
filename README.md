@@ -1,10 +1,12 @@
 # largeFileUpload
 
 #### 介绍
-比较全面的大文件上传
+
+比较全面的大文件上 传
 
 #### 软件架构
-前端:Vue3+Ts+axios+Vite  后端:node+express
+
+前端:Vue3+Ts+axios+Vite 后端:node+express
 
 #### 使用说明
 
